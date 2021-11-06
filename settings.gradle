@@ -6,6 +6,6 @@
 //        jcenter() // Warning: this repository is going to shut down soon
 //    }
 //}
-rootProject.name = "dotmimsync"
+//rootProject.name = "dotmimsync"
 include ':app'
 include ':dotmimsync'
