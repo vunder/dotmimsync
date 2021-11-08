@@ -669,6 +669,7 @@ class SqliteSyncAdapter(
                         is Float -> this.bindDouble(index++, it.toDouble())
                         is BigDecimal -> this.bindDouble(index++, it.toDouble())
                         is UUID -> this.bindString(index++, it.toString().uppercase())
+                        is Date -> this.bindString(index++, dateFormat.format(it))
                         else -> this.bindString(index++, it.toString())
                     }
                 }
