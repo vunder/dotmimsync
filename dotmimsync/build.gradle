@@ -60,10 +60,10 @@ dependencies {
 publishing {
     publications {
         library(MavenPublication) {
-
-            setGroupId("com.github.vunder")
-            setArtifactId("dotmimsync")
-            version "com.github.vunder"
+            groupId "com.github.vunder"//packageName
+            artifactId "dotmimsync"//project.getName()
+            version = "0.8.1-pre"//libraryVersion
+            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
 
             println "publishing: " + groupId
             println "publishing: " + artifactId
