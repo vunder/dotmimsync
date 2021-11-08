@@ -23,13 +23,7 @@ class SqliteSyncAdapter(
     setup: SyncSetup,
     private val database: SQLiteDatabase
 ) : DbSyncAdapter(tableDescription, setup) {
-    private class ThreadLocalSimpleDateFormat : ThreadLocal<SimpleDateFormat>() {
-        override fun initialValue(): SimpleDateFormat {
-            return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        }
-    }
-
-    private val tlSdf = ThreadLocalSimpleDateFormat()
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     override fun getSelectInitializedChanges(): Cursor {
         val stringBuilder = StringBuilder("SELECT ")
@@ -617,7 +611,7 @@ class SqliteSyncAdapter(
                 Base64.decode(value.toString(), Base64.NO_WRAP)
             DbType.Date ->
 //                DateTypeConverter.toDate(value.toString())
-                tlSdf.get()!!.parse(value.toString())
+                dateFormat.parse(value.toString())
             DbType.Guid ->
                 value.toString().uppercase()
             else -> value
