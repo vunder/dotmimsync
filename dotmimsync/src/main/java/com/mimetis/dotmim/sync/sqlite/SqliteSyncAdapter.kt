@@ -119,7 +119,8 @@ class SqliteSyncAdapter(
         fillParametersFromColumns(
             parameters,
             this.tableDescription.getPrimaryKeysColumns().filter { c -> !c.isReadOnly },
-            primaryKeyRow
+            primaryKeyRow,
+            stringOnly = true
         )
 
         val f = processSqlWithArgs(stringBuilder.toString(), parameters)
@@ -590,14 +591,19 @@ class SqliteSyncAdapter(
     private fun fillParametersFromColumns(
         parameters: MutableMap<String, Any?>,
         columns: List<SyncColumn>,
-        row: SyncRow
+        row: SyncRow,
+        stringOnly: Boolean = false
     ) {
         val schemaTable = row.table
         for (column in columns) {
             val col = schemaTable.columns?.get(column.columnName)
             if (col != null) {
                 val unquotedColumn = ParserName.parse(column).normalized().unquoted().toString()
-                parameters["@$unquotedColumn"] = convertToParameter(col, row[col])
+                parameters["@$unquotedColumn"] =
+                    if (stringOnly)
+                        convertToString(col, row[col])
+                    else
+                        convertToParameter(col, row[col])
             }
         }
     }
@@ -610,8 +616,30 @@ class SqliteSyncAdapter(
             DbType.Binary ->
                 Base64.decode(value.toString(), Base64.NO_WRAP)
             DbType.DateTime ->
-//                DateTypeConverter.toDate(value.toString())
                 dateFormat.parse(value.toString().replace("T", " "))
+            DbType.Guid ->
+                value.toString().uppercase()
+            else -> value
+        }
+    }
+
+    private fun convertToString(column: SyncColumn, value: Any?): Any? {
+        if (value == null)
+            return null
+
+        return when (column.getDbType()) {
+            DbType.Binary ->
+                "X'" + Base64.decode(value.toString(), Base64.NO_WRAP)
+                    .joinToString("") {
+                        val x = it.toString(16)
+                        if (x.length < 2)
+                            "0$x"
+                        else
+                            x
+                    }
+                    .uppercase(Locale.getDefault()) + "'"
+            DbType.DateTime ->
+                value.toString().replace("T", " ")
             DbType.Guid ->
                 value.toString().uppercase()
             else -> value
