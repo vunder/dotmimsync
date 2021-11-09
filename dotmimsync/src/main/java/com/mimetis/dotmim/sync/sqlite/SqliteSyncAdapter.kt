@@ -609,7 +609,7 @@ class SqliteSyncAdapter(
         return when (column.getDbType()) {
             DbType.Binary ->
                 Base64.decode(value.toString(), Base64.NO_WRAP)
-            DbType.Date ->
+            DbType.DateTime ->
 //                DateTypeConverter.toDate(value.toString())
                 dateFormat.parse(value.toString())
             DbType.Guid ->
