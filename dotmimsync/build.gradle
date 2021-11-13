@@ -51,6 +51,7 @@ dependencies {
     implementation 'com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:0.8.0'
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.2'
     implementation 'ru.gildor.coroutines:kotlin-coroutines-okhttp:1.0'
+    implementation 'com.squareup.okhttp3:okhttp-urlconnection:3.8.1'
 
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

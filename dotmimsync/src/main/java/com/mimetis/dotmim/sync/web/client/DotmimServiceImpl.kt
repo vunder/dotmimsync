@@ -15,7 +15,9 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import com.mimetis.dotmim.sync.serialization.Converter
 import com.mimetis.dotmim.sync.web.client.*
+import okhttp3.JavaNetCookieJar
 import ru.gildor.coroutines.okhttp.await
+import java.net.CookieManager
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -274,6 +276,7 @@ class DotmimServiceImpl {
         okHttpClient = OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(300, TimeUnit.SECONDS)
+            .cookieJar(JavaNetCookieJar(CookieManager()))
             .addInterceptor { chain: Interceptor.Chain ->
                 val buffer = Buffer()
                 chain.request().body?.writeTo(buffer)
