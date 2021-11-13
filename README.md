@@ -18,3 +18,5 @@ Android port for [Dotmim.Sync](https://github.com/Mimetis/Dotmim.Sync) C# librar
             implementation 'com.github.vunder:dotmimsync:Tag'
     }
 ```
+
+1.0-beta2 -> 0.9.0

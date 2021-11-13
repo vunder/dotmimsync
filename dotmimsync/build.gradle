@@ -14,8 +14,8 @@ android {
     defaultConfig {
         minSdk rootProject.ext.minSdk
         targetSdk rootProject.ext.targetSdk
-        versionCode 2
-        versionName "0.8.1"
+        versionCode 3
+        versionName "1.0-beta2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -62,7 +62,7 @@ publishing {
         library(MavenPublication) {
             groupId "com.github.vunder"//packageName
             artifactId "dotmimsync"//project.getName()
-            version = "0.8.1-pre"//libraryVersion
+            version = "1.0-beta2"//libraryVersion
             artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
 
             println "publishing: " + groupId
