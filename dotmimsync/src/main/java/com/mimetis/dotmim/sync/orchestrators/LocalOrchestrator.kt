@@ -437,7 +437,7 @@ class LocalOrchestrator(
         provision: EnumSet<SyncProvision>,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>? = null
-    ) {
+    ): Boolean {
         // Create a temporary SyncSet for attaching to the schemaTable
         val tmpSchema = SyncSet()
 
@@ -451,7 +451,8 @@ class LocalOrchestrator(
         for (filter in this.setup.filters)
             tmpSchema.filters.add(filter)
 
-        this.deprovision(tmpSchema, provision, clientScopeInfo, progress)
+        val isDeprovisioned = this.deprovision(tmpSchema, provision, clientScopeInfo, progress)
+        return isDeprovisioned;
     }
 
     /**
@@ -462,7 +463,7 @@ class LocalOrchestrator(
         provision: EnumSet<SyncProvision>,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>? = null
-    ) {
+    ): Boolean {
         val ctx = getContext()
         ctx.syncStage = SyncStage.Deprovisioning
 
@@ -481,6 +482,6 @@ class LocalOrchestrator(
         val isDeprovisioned =
             internalDeprovision(ctx, schema, this.setup, provision, clientScopeInfo, progress)
 
-//        return isDeprovisioned
+        return isDeprovisioned
     }
 }

@@ -18,12 +18,6 @@ import kotlin.collections.ArrayList
 @Serializable
 class BatchInfo() {
     /**
-     * Internally setting schema
-     */
-    @Transient
-    var sanitizedSchema: SyncSet = SyncSet()
-
-    /**
      * Is the batch parts are in memory
      * If true, only one BPI
      * If false, several serialized BPI
@@ -72,6 +66,12 @@ class BatchInfo() {
      */
     @SerialName("ser")
     var serializerFactoryKey: String? = null
+
+    /**
+     * Internally setting schema
+     */
+    @SerialName("schema")
+    var sanitizedSchema: SyncSet = SyncSet()
 
     /**
      * Create a new BatchInfo, containing all BatchPartInfo
