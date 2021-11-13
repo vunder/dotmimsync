@@ -344,10 +344,27 @@ abstract class BaseOrchestrator(
         progress: Progress<ProgressArgs>?
     ): ScopeInfo {
         val scopeExists = scopeBuilder.existsScopeInfo(scope.id)
-        return if (scopeExists)
+        val action = ScopeSavingArgs(
+            getContext(),
+            scopeBuilder.scopeInfoTableName.toString(),
+            DbScopeType.Client,
+            scope
+        )
+        intercept(action)
+        val newScopeInfo = if (scopeExists)
             scopeBuilder.updateScope(scope)
         else
             scopeBuilder.insertScope(scope)
+
+        intercept(
+            ScopeSavedArgs(
+                getContext(),
+                scopeBuilder.scopeInfoTableName.toString(),
+                DbScopeType.Client,
+                newScopeInfo
+            )
+        )
+        return newScopeInfo
     }
 
     private fun internalGetTableSchema(
