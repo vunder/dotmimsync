@@ -20,3 +20,10 @@ Android port for [Dotmim.Sync](https://github.com/Mimetis/Dotmim.Sync) C# librar
 ```
 
 1.0-beta2 -> 0.9.0
+
+Necessary to add
+```
+    dependencies {
+            implementation 'com.squareup.okhttp3:okhttp-urlconnection:5.0.0-alpha.2'
+    }
+```
