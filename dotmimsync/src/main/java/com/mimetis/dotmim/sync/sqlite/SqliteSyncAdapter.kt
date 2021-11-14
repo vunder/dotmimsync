@@ -24,6 +24,16 @@ class SqliteSyncAdapter(
     private val database: SQLiteDatabase
 ) : DbSyncAdapter(tableDescription, setup) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    private var getSelectChangesSql = ""
+    private var getSelectRowSql = ""
+    private var deleteRowSql = ""
+    private var deleteRowChangesSql = ""
+    private var initializeRowSql = ""
+    private var initializeRowChangesSql = ""
+    private var updateRowSql = ""
+    private var updateRowChangesSql = ""
+    private var updateMetadataSql = ""
+    private var updateUntrackedRowsSql = ""
 
     override fun getSelectInitializedChanges(): Cursor {
         val stringBuilder = StringBuilder("SELECT ")
@@ -47,73 +57,82 @@ class SqliteSyncAdapter(
     }
 
     override fun getSelectChanges(lastTimestamp: Long?): Cursor {
-        val stringBuilder = StringBuilder("SELECT ")
-        for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(pkColumn).quoted().toString()
-            stringBuilder.appendLine("\t[side].$columnName, ")
+        if (getSelectChangesSql.isEmpty()) {
+            val stringBuilder = StringBuilder("SELECT ")
+            for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(pkColumn).quoted().toString()
+                stringBuilder.appendLine("\t[side].$columnName, ")
+            }
+            for (mutableColumn in this.tableDescription.getMutableColumns()) {
+                val columnName = ParserName.parse(mutableColumn).quoted().toString()
+                stringBuilder.appendLine("\t[base].$columnName, ")
+            }
+            stringBuilder.appendLine("\t[side].[sync_row_is_tombstone], ")
+            stringBuilder.appendLine("\t[side].[update_scope_id] as [sync_update_scope_id] ")
+            stringBuilder.appendLine("FROM ${trackingName.quoted()} [side]")
+            stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} [base]")
+            stringBuilder.append("ON ")
+
+            var empty = ""
+            for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(pkColumn).quoted().toString()
+
+                stringBuilder.append("$empty[base].$columnName = [side].$columnName")
+                empty = " AND "
+            }
+            stringBuilder.appendLine()
+            //stringBuilder.appendLine("WHERE (");
+            //stringBuilder.appendLine("\t[side].[timestamp] > @sync_min_timestamp");
+            //stringBuilder.appendLine("\tAND ([side].[update_scope_id] <> @sync_scope_id OR [side].[update_scope_id] IS NULL)");
+            //stringBuilder.appendLine(")");
+
+            // Looking at discussion https://github.com/Mimetis/Dotmim.Sync/discussions/453, trying to remove ([side].[update_scope_id] <> @sync_scope_id)
+            // since we are sure that sqlite will never be a server side database
+
+            stringBuilder.appendLine("WHERE ([side].[timestamp] > @sync_min_timestamp AND [side].[update_scope_id] IS NULL)")
+
+            getSelectChangesSql = stringBuilder.toString()
         }
-        for (mutableColumn in this.tableDescription.getMutableColumns()) {
-            val columnName = ParserName.parse(mutableColumn).quoted().toString()
-            stringBuilder.appendLine("\t[base].$columnName, ")
-        }
-        stringBuilder.appendLine("\t[side].[sync_row_is_tombstone], ")
-        stringBuilder.appendLine("\t[side].[update_scope_id] as [sync_update_scope_id] ")
-        stringBuilder.appendLine("FROM ${trackingName.quoted()} [side]")
-        stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} [base]")
-        stringBuilder.append("ON ")
 
-        var empty = ""
-        for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(pkColumn).quoted().toString()
-
-            stringBuilder.append("$empty[base].$columnName = [side].$columnName")
-            empty = " AND "
-        }
-        stringBuilder.appendLine()
-        //stringBuilder.appendLine("WHERE (");
-        //stringBuilder.appendLine("\t[side].[timestamp] > @sync_min_timestamp");
-        //stringBuilder.appendLine("\tAND ([side].[update_scope_id] <> @sync_scope_id OR [side].[update_scope_id] IS NULL)");
-        //stringBuilder.appendLine(")");
-
-        // Looking at discussion https://github.com/Mimetis/Dotmim.Sync/discussions/453, trying to remove ([side].[update_scope_id] <> @sync_scope_id)
-        // since we are sure that sqlite will never be a server side database
-
-        stringBuilder.appendLine("WHERE ([side].[timestamp] > @sync_min_timestamp AND [side].[update_scope_id] IS NULL)")
-
-        return database.rawQuery(stringBuilder.toString(), arrayOf((lastTimestamp ?: 0).toString()))
+        return database.rawQuery(getSelectChangesSql, arrayOf((lastTimestamp ?: 0).toString()))
     }
 
     override fun getSelectRow(primaryKeyRow: SyncRow): Cursor {
-        val stringBuilder = StringBuilder("SELECT ")
-        stringBuilder.appendLine()
-        val stringBuilder1 = StringBuilder()
-        var empty = ""
-        for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(pkColumn).quoted().toString()
-            val unquotedColumnName = ParserName.parse(pkColumn).unquoted().normalized().toString()
-            stringBuilder.appendLine("\t[side].${columnName}, ")
-            stringBuilder1.append("${empty}[side].${columnName} = @${unquotedColumnName}")
-            empty = " AND "
-        }
-        for (mutableColumn in this.tableDescription.getMutableColumns()) {
-            val nonPkColumnName = ParserName.parse(mutableColumn).quoted().toString()
-            stringBuilder.appendLine("\t[base].${nonPkColumnName}, ")
-        }
-        stringBuilder.appendLine("\t[side].[sync_row_is_tombstone], ")
-        stringBuilder.appendLine("\t[side].[update_scope_id] as [sync_update_scope_id]")
+        if (getSelectRowSql.isEmpty()) {
+            val stringBuilder = StringBuilder("SELECT ")
+            stringBuilder.appendLine()
+            val stringBuilder1 = StringBuilder()
+            var empty = ""
+            for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(pkColumn).quoted().toString()
+                val unquotedColumnName =
+                    ParserName.parse(pkColumn).unquoted().normalized().toString()
+                stringBuilder.appendLine("\t[side].${columnName}, ")
+                stringBuilder1.append("${empty}[side].${columnName} = @${unquotedColumnName}")
+                empty = " AND "
+            }
+            for (mutableColumn in this.tableDescription.getMutableColumns()) {
+                val nonPkColumnName = ParserName.parse(mutableColumn).quoted().toString()
+                stringBuilder.appendLine("\t[base].${nonPkColumnName}, ")
+            }
+            stringBuilder.appendLine("\t[side].[sync_row_is_tombstone], ")
+            stringBuilder.appendLine("\t[side].[update_scope_id] as [sync_update_scope_id]")
 
-        stringBuilder.appendLine("FROM ${trackingName.quoted()} [side] ")
-        stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} [base] ON ")
+            stringBuilder.appendLine("FROM ${trackingName.quoted()} [side] ")
+            stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} [base] ON ")
 
-        var str = ""
-        for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(pkColumn).quoted().toString()
-            stringBuilder.append("${str}[base].${columnName} = [side].${columnName}")
-            str = " AND "
+            var str = ""
+            for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(pkColumn).quoted().toString()
+                stringBuilder.append("${str}[base].${columnName} = [side].${columnName}")
+                str = " AND "
+            }
+            stringBuilder.appendLine()
+            stringBuilder.append("WHERE $stringBuilder1")
+            stringBuilder.append(";")
+
+            getSelectRowSql = stringBuilder.toString()
         }
-        stringBuilder.appendLine()
-        stringBuilder.append("WHERE $stringBuilder1")
-        stringBuilder.append(";")
 
         val parameters = mutableMapOf<String, Any?>()
         fillParametersFromColumns(
@@ -123,7 +142,7 @@ class SqliteSyncAdapter(
             stringOnly = true
         )
 
-        val f = processSqlWithArgs(stringBuilder.toString(), parameters)
+        val f = processSqlWithArgs(getSelectRowSql, parameters)
         return database.rawQuery(f.first, f.second.map { it.toString() }.toTypedArray())
     }
 
@@ -148,61 +167,65 @@ class SqliteSyncAdapter(
         forceWrite: Boolean,
         row: SyncRow
     ): Int {
-        val stringBuilder = StringBuilder()
-        val str1 = SqliteManagementUtils.joinTwoTablesOnClause(
-            this.tableDescription.primaryKeys,
-            "[c]",
-            "[base]"
-        )
-        val str7 = SqliteManagementUtils.joinTwoTablesOnClause(
-            this.tableDescription.primaryKeys,
-            "[p]",
-            "[side]"
-        )
+        if (deleteRowSql.isEmpty()) {
+            val stringBuilder = StringBuilder()
+            val str1 = SqliteManagementUtils.joinTwoTablesOnClause(
+                this.tableDescription.primaryKeys,
+                "[c]",
+                "[base]"
+            )
+            val str7 = SqliteManagementUtils.joinTwoTablesOnClause(
+                this.tableDescription.primaryKeys,
+                "[p]",
+                "[side]"
+            )
 
-        stringBuilder.appendLine(";WITH [c] AS (")
-        stringBuilder.append("\tSELECT ")
-        for (c in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(c).quoted().toString()
-            stringBuilder.append("[p].${columnName}, ")
+            stringBuilder.appendLine(";WITH [c] AS (")
+            stringBuilder.append("\tSELECT ")
+            for (c in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(c).quoted().toString()
+                stringBuilder.append("[p].${columnName}, ")
+            }
+            stringBuilder.appendLine("[side].[update_scope_id] as [sync_update_scope_id], [side].[timestamp] as [sync_timestamp], [side].[sync_row_is_tombstone]")
+            stringBuilder.append("\tFROM (SELECT ")
+            var comma = ""
+            for (c in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(c).quoted().toString()
+                val columnParameterName = ParserName.parse(c).unquoted().normalized().toString()
+
+                stringBuilder.append("${comma}@${columnParameterName} as $columnName")
+                comma = ", "
+            }
+            stringBuilder.appendLine(") AS [p]")
+            stringBuilder.append("\tLEFT JOIN ${trackingName.quoted()} [side] ON ")
+            stringBuilder.appendLine("\t${str7}")
+            stringBuilder.appendLine("\t)")
+
+            stringBuilder.appendLine("DELETE FROM ${tableName.quoted()} ")
+            stringBuilder.appendLine(
+                "WHERE ${
+                    SqliteManagementUtils.whereColumnAndParameters(
+                        this.tableDescription.primaryKeys,
+                        ""
+                    )
+                }"
+            )
+            stringBuilder.appendLine("AND (EXISTS (")
+            stringBuilder.appendLine("     SELECT * FROM [c] ")
+            stringBuilder.appendLine(
+                "     WHERE ${
+                    SqliteManagementUtils.whereColumnAndParameters(
+                        this.tableDescription.primaryKeys,
+                        "[c]"
+                    )
+                }"
+            )
+            stringBuilder.appendLine("     AND ([sync_timestamp] < @sync_min_timestamp OR [sync_timestamp] IS NULL OR [sync_update_scope_id] = @sync_scope_id))")
+            stringBuilder.appendLine("  OR @sync_force_write = 1")
+            stringBuilder.appendLine(" );")
+
+            deleteRowSql = stringBuilder.toString()
         }
-        stringBuilder.appendLine("[side].[update_scope_id] as [sync_update_scope_id], [side].[timestamp] as [sync_timestamp], [side].[sync_row_is_tombstone]")
-        stringBuilder.append("\tFROM (SELECT ")
-        var comma = ""
-        for (c in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(c).quoted().toString()
-            val columnParameterName = ParserName.parse(c).unquoted().normalized().toString()
-
-            stringBuilder.append("${comma}@${columnParameterName} as $columnName")
-            comma = ", "
-        }
-        stringBuilder.appendLine(") AS [p]")
-        stringBuilder.append("\tLEFT JOIN ${trackingName.quoted()} [side] ON ")
-        stringBuilder.appendLine("\t${str7}")
-        stringBuilder.appendLine("\t)")
-
-        stringBuilder.appendLine("DELETE FROM ${tableName.quoted()} ")
-        stringBuilder.appendLine(
-            "WHERE ${
-                SqliteManagementUtils.whereColumnAndParameters(
-                    this.tableDescription.primaryKeys,
-                    ""
-                )
-            }"
-        )
-        stringBuilder.appendLine("AND (EXISTS (")
-        stringBuilder.appendLine("     SELECT * FROM [c] ")
-        stringBuilder.appendLine(
-            "     WHERE ${
-                SqliteManagementUtils.whereColumnAndParameters(
-                    this.tableDescription.primaryKeys,
-                    "[c]"
-                )
-            }"
-        )
-        stringBuilder.appendLine("     AND ([sync_timestamp] < @sync_min_timestamp OR [sync_timestamp] IS NULL OR [sync_update_scope_id] = @sync_scope_id))")
-        stringBuilder.appendLine("  OR @sync_force_write = 1")
-        stringBuilder.appendLine(" );")
 
         val parameters = mutableMapOf<String, Any?>(
             "@sync_force_write" to forceWrite,
@@ -215,24 +238,28 @@ class SqliteSyncAdapter(
             row
         )
 
-        val op1 = database.executeNonQuery(stringBuilder.toString(), parameters)
+        val op1 = database.executeNonQuery(deleteRowSql, parameters)
 
-        stringBuilder.clear()
-        stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
-        stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
-        stringBuilder.appendLine("[sync_row_is_tombstone] = 1,")
-        stringBuilder.appendLine("[last_change_datetime] = datetime('now')")
-        stringBuilder.appendLine(
-            "WHERE ${
-                SqliteManagementUtils.whereColumnAndParameters(
-                    this.tableDescription.primaryKeys,
-                    ""
-                )
-            }"
-        )
-        stringBuilder.appendLine(" AND (select changes()) > 0")
+        if (deleteRowChangesSql.isEmpty()) {
+            val stringBuilder = StringBuilder(500)
+            stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
+            stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
+            stringBuilder.appendLine("[sync_row_is_tombstone] = 1,")
+            stringBuilder.appendLine("[last_change_datetime] = datetime('now')")
+            stringBuilder.appendLine(
+                "WHERE ${
+                    SqliteManagementUtils.whereColumnAndParameters(
+                        this.tableDescription.primaryKeys,
+                        ""
+                    )
+                }"
+            )
+            stringBuilder.appendLine(" AND (select changes()) > 0")
 
-        return op1 + database.executeNonQuery(stringBuilder.toString(), parameters)
+            deleteRowChangesSql = stringBuilder.toString()
+        }
+
+        return op1 + database.executeNonQuery(deleteRowChangesSql, parameters)
     }
 
     override fun initializeRow(
@@ -242,47 +269,51 @@ class SqliteSyncAdapter(
         forceWrite: Boolean,
         row: SyncRow
     ): Int {
-        val stringBuilderArguments = StringBuilder()
-        val stringBuilderParameters = StringBuilder()
-        val stringBuilderParametersValues = StringBuilder()
-        val stringBuilderParametersValues2 = StringBuilder()
-        var empty = ""
+        if (initializeRowSql.isEmpty()) {
+            val stringBuilderArguments = StringBuilder()
+            val stringBuilderParameters = StringBuilder()
+            val stringBuilderParametersValues = StringBuilder()
+            val stringBuilderParametersValues2 = StringBuilder()
+            var empty = ""
 
-        val str1 = SqliteManagementUtils.joinOneTablesOnParametersValues(
-            this.tableDescription.primaryKeys,
-            "[side]"
-        )
-        val str2 = SqliteManagementUtils.joinOneTablesOnParametersValues(
-            this.tableDescription.primaryKeys,
-            "[base]"
-        )
-        val str7 = SqliteManagementUtils.joinTwoTablesOnClause(
-            this.tableDescription.primaryKeys,
-            "[p]",
-            "[side]"
-        )
+            val str1 = SqliteManagementUtils.joinOneTablesOnParametersValues(
+                this.tableDescription.primaryKeys,
+                "[side]"
+            )
+            val str2 = SqliteManagementUtils.joinOneTablesOnParametersValues(
+                this.tableDescription.primaryKeys,
+                "[base]"
+            )
+            val str7 = SqliteManagementUtils.joinTwoTablesOnClause(
+                this.tableDescription.primaryKeys,
+                "[p]",
+                "[side]"
+            )
 
-        // Generate Update command
-        val stringBuilder = StringBuilder()
+            // Generate Update command
+            val stringBuilder = StringBuilder(1000)
 
-        for (mutableColumn in this.tableDescription.getMutableColumns(
-            includeAutoIncrement = false,
-            includePrimaryKeys = true
-        )) {
-            val columnName = ParserName.parse(mutableColumn).quoted().toString()
-            val columnParameterName =
-                ParserName.parse(mutableColumn).unquoted().normalized().toString()
-            stringBuilderParametersValues.append("${empty}@${columnParameterName} as $columnName")
-            stringBuilderParametersValues2.append("${empty}@${columnParameterName}")
-            stringBuilderArguments.append("${empty}${columnName}")
-            stringBuilderParameters.append("${empty}[c].${columnName}")
-            empty = ", "
+            for (mutableColumn in this.tableDescription.getMutableColumns(
+                includeAutoIncrement = false,
+                includePrimaryKeys = true
+            )) {
+                val columnName = ParserName.parse(mutableColumn).quoted().toString()
+                val columnParameterName =
+                    ParserName.parse(mutableColumn).unquoted().normalized().toString()
+                stringBuilderParametersValues.append("${empty}@${columnParameterName} as $columnName")
+                stringBuilderParametersValues2.append("${empty}@${columnParameterName}")
+                stringBuilderArguments.append("${empty}${columnName}")
+                stringBuilderParameters.append("${empty}[c].${columnName}")
+                empty = ", "
+            }
+
+            stringBuilder.appendLine("INSERT OR IGNORE INTO ${tableName.quoted()}")
+            stringBuilder.appendLine("(${stringBuilderArguments})")
+            stringBuilder.append("VALUES (${stringBuilderParametersValues2}) ")
+            stringBuilder.appendLine(";")
+
+            initializeRowSql = stringBuilder.toString()
         }
-
-        stringBuilder.appendLine("INSERT OR IGNORE INTO ${tableName.quoted()}")
-        stringBuilder.appendLine("(${stringBuilderArguments})")
-        stringBuilder.append("VALUES (${stringBuilderParametersValues2}) ")
-        stringBuilder.appendLine(";")
 
         val parameters = mutableMapOf<String, Any?>(
             "@sync_force_write" to forceWrite,
@@ -295,7 +326,7 @@ class SqliteSyncAdapter(
             row
         )
 
-        val op1 = database.executeNonQuery(stringBuilder.toString(), parameters)
+        val op1 = database.executeNonQuery(initializeRowSql, parameters)
 
         //stringBuilder.AppendLine($"INSERT OR REPLACE INTO {tableName.Quoted().ToString()}");
         //stringBuilder.AppendLine($"({stringBuilderArguments.ToString()})");
@@ -317,23 +348,28 @@ class SqliteSyncAdapter(
         //stringBuilder.AppendLine($"FROM (SELECT {stringBuilderParametersValues.ToString()}) as [c]");
         //stringBuilder.AppendLine($"LEFT JOIN {trackingName.Quoted().ToString()} AS [side] ON {str1}");
 
-        stringBuilder.clear()
-        stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
-        stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
-        stringBuilder.appendLine("[sync_row_is_tombstone] = 0,")
-        stringBuilder.appendLine("[last_change_datetime] = datetime('now')")
-        stringBuilder.appendLine(
-            "WHERE ${
-                SqliteManagementUtils.whereColumnAndParameters(
-                    this.tableDescription.primaryKeys,
-                    ""
-                )
-            }"
-        )
-        stringBuilder.append(" AND (select changes()) > 0")
-        stringBuilder.appendLine(";")
+        if (initializeRowChangesSql.isEmpty()) {
+            val stringBuilder = StringBuilder(500)
+            stringBuilder.clear()
+            stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
+            stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
+            stringBuilder.appendLine("[sync_row_is_tombstone] = 0,")
+            stringBuilder.appendLine("[last_change_datetime] = datetime('now')")
+            stringBuilder.appendLine(
+                "WHERE ${
+                    SqliteManagementUtils.whereColumnAndParameters(
+                        this.tableDescription.primaryKeys,
+                        ""
+                    )
+                }"
+            )
+            stringBuilder.append(" AND (select changes()) > 0")
+            stringBuilder.appendLine(";")
 
-        return op1 + database.executeNonQuery(stringBuilder.toString(), parameters)
+            initializeRowChangesSql = stringBuilder.toString()
+        }
+
+        return op1 + database.executeNonQuery(initializeRowChangesSql, parameters)
     }
 
     override fun updateRow(
@@ -343,117 +379,121 @@ class SqliteSyncAdapter(
         forceWrite: Boolean,
         row: SyncRow
     ): Int {
-        val stringBuilderArguments = StringBuilder()
-        val stringBuilderParameters = StringBuilder()
-        val stringBuilderParametersValues = StringBuilder()
-        var empty = ""
+        if (updateRowSql.isEmpty()) {
+            val stringBuilderArguments = StringBuilder()
+            val stringBuilderParameters = StringBuilder()
+            val stringBuilderParametersValues = StringBuilder()
+            var empty = ""
 
-        val str1 = SqliteManagementUtils.joinOneTablesOnParametersValues(
-            this.tableDescription.primaryKeys,
-            "[side]"
-        )
+            val str1 = SqliteManagementUtils.joinOneTablesOnParametersValues(
+                this.tableDescription.primaryKeys,
+                "[side]"
+            )
 //        val str2 = SqliteManagementUtils.joinTwoTablesOnClause(this.tableDescription.primaryKeys, "[c]", "[base]")
-        val str2 = SqliteManagementUtils.joinOneTablesOnParametersValues(
-            this.tableDescription.primaryKeys,
-            "[base]"
-        )
-
-        // Generate Update command
-        val stringBuilder = StringBuilder()
-
-        for (mutableColumn in this.tableDescription.getMutableColumns(
-            includeAutoIncrement = false,
-            includePrimaryKeys = true
-        )) {
-            val columnName = ParserName.parse(mutableColumn).quoted().toString()
-            val columnParameterName =
-                ParserName.parse(mutableColumn).unquoted().normalized().toString()
-
-            stringBuilderParametersValues.append("${empty}@${columnParameterName} as $columnName")
-            stringBuilderArguments.append("${empty}${columnName}")
-            stringBuilderParameters.append("${empty}[c].${columnName}")
-            empty = "\n, "
-        }
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            // No support for "ON CONFLICT" in Android < 11 because this is supported in Sqlite after 3.24
-            stringBuilder.appendLine("INSERT OR REPLACE INTO ${tableName.quoted()}")
-            stringBuilder.appendLine("(${stringBuilderArguments})")
-            stringBuilder.appendLine("SELECT $stringBuilderParameters ")
-            stringBuilder.appendLine("FROM (SELECT ${stringBuilderParametersValues}) as [c]")
-            stringBuilder.appendLine("LEFT JOIN ${trackingName.quoted()} AS [side] ON $str1")
-            stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} AS [base] ON $str2")
-
-            stringBuilder.appendLine(
-                "WHERE (${
-                    SqliteManagementUtils.whereColumnAndParameters(
-                        this.tableDescription.primaryKeys,
-                        "[base]"
-                    )
-                } "
+            val str2 = SqliteManagementUtils.joinOneTablesOnParametersValues(
+                this.tableDescription.primaryKeys,
+                "[base]"
             )
-            stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[update_scope_id] = @sync_scope_id)) ")
-            stringBuilder.appendLine(
-                "OR (${
-                    SqliteManagementUtils.whereColumnIsNull(
-                        this.tableDescription.primaryKeys,
-                        "[base]"
-                    )
-                } "
-            )
-            stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[timestamp] IS NULL)) ")
-            stringBuilder.appendLine("OR @sync_force_write = 1;")
-        } else {
-            // create update statement without PK
-            var emptyUpdate = ""
-            var columnsToUpdate = false
-            val stringBuilderUpdateSet = StringBuilder()
+
+            // Generate Update command
+            val stringBuilder = StringBuilder(1000)
+
             for (mutableColumn in this.tableDescription.getMutableColumns(
                 includeAutoIncrement = false,
-                includePrimaryKeys = false
+                includePrimaryKeys = true
             )) {
                 val columnName = ParserName.parse(mutableColumn).quoted().toString()
-                stringBuilderUpdateSet.append("${emptyUpdate}${columnName}=excluded.${columnName}")
-                emptyUpdate = "\n, "
+                val columnParameterName =
+                    ParserName.parse(mutableColumn).unquoted().normalized().toString()
 
-                columnsToUpdate = true
+                stringBuilderParametersValues.append("${empty}@${columnParameterName} as $columnName")
+                stringBuilderArguments.append("${empty}${columnName}")
+                stringBuilderParameters.append("${empty}[c].${columnName}")
+                empty = "\n, "
             }
 
-            val primaryKeys = this.tableDescription.primaryKeys.joinToString(",") { name ->
-                ParserName.parse(name).quoted().toString()
-            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                // No support for "ON CONFLICT" in Android < 11 because this is supported in Sqlite after 3.24
+                stringBuilder.appendLine("INSERT OR REPLACE INTO ${tableName.quoted()}")
+                stringBuilder.appendLine("(${stringBuilderArguments})")
+                stringBuilder.appendLine("SELECT $stringBuilderParameters ")
+                stringBuilder.appendLine("FROM (SELECT ${stringBuilderParametersValues}) as [c]")
+                stringBuilder.appendLine("LEFT JOIN ${trackingName.quoted()} AS [side] ON $str1")
+                stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} AS [base] ON $str2")
 
-            // add CTE
-            stringBuilder.appendLine("WITH CHANGESET as (SELECT $stringBuilderParameters ")
-            stringBuilder.appendLine("FROM (SELECT ${stringBuilderParametersValues}) as [c]")
-            stringBuilder.appendLine("LEFT JOIN ${trackingName.quoted()} AS [side] ON $str1")
-            stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} AS [base] ON $str2")
+                stringBuilder.appendLine(
+                    "WHERE (${
+                        SqliteManagementUtils.whereColumnAndParameters(
+                            this.tableDescription.primaryKeys,
+                            "[base]"
+                        )
+                    } "
+                )
+                stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[update_scope_id] = @sync_scope_id)) ")
+                stringBuilder.appendLine(
+                    "OR (${
+                        SqliteManagementUtils.whereColumnIsNull(
+                            this.tableDescription.primaryKeys,
+                            "[base]"
+                        )
+                    } "
+                )
+                stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[timestamp] IS NULL)) ")
+                stringBuilder.appendLine("OR @sync_force_write = 1;")
+            } else {
+                // create update statement without PK
+                var emptyUpdate = ""
+                var columnsToUpdate = false
+                val stringBuilderUpdateSet = StringBuilder()
+                for (mutableColumn in this.tableDescription.getMutableColumns(
+                    includeAutoIncrement = false,
+                    includePrimaryKeys = false
+                )) {
+                    val columnName = ParserName.parse(mutableColumn).quoted().toString()
+                    stringBuilderUpdateSet.append("${emptyUpdate}${columnName}=excluded.${columnName}")
+                    emptyUpdate = "\n, "
+
+                    columnsToUpdate = true
+                }
+
+                val primaryKeys = this.tableDescription.primaryKeys.joinToString(",") { name ->
+                    ParserName.parse(name).quoted().toString()
+                }
+
+                // add CTE
+                stringBuilder.appendLine("WITH CHANGESET as (SELECT $stringBuilderParameters ")
+                stringBuilder.appendLine("FROM (SELECT ${stringBuilderParametersValues}) as [c]")
+                stringBuilder.appendLine("LEFT JOIN ${trackingName.quoted()} AS [side] ON $str1")
+                stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} AS [base] ON $str2")
 //        stringBuilder.appendLine("WHERE (${SqliteManagementUtils.whereColumnAndParameters(this.tableDescription.primaryKeys, "[base]")} ")
-            stringBuilder.appendLine("WHERE ([side].[timestamp] < @sync_min_timestamp OR [side].[update_scope_id] = @sync_scope_id) ")
-            stringBuilder.append(
-                "OR (${
-                    SqliteManagementUtils.whereColumnIsNull(
-                        this.tableDescription.primaryKeys,
-                        "[base]"
-                    )
-                } "
-            )
-            stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[timestamp] IS NULL)) ")
-            stringBuilder.append("OR @sync_force_write = 1")
-            stringBuilder.appendLine(")")
+                stringBuilder.appendLine("WHERE ([side].[timestamp] < @sync_min_timestamp OR [side].[update_scope_id] = @sync_scope_id) ")
+                stringBuilder.append(
+                    "OR (${
+                        SqliteManagementUtils.whereColumnIsNull(
+                            this.tableDescription.primaryKeys,
+                            "[base]"
+                        )
+                    } "
+                )
+                stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[timestamp] IS NULL)) ")
+                stringBuilder.append("OR @sync_force_write = 1")
+                stringBuilder.appendLine(")")
 
-            stringBuilder.appendLine("INSERT INTO ${tableName.quoted()}")
-            stringBuilder.appendLine("(${stringBuilderArguments})")
-            // use CTE here. The CTE is required in order to make the "ON CONFLICT" statement work. Otherwise SQLite cannot parse it
-            // Note, that we have to add the pseudo WHERE TRUE clause here, as otherwise the SQLite parser may confuse the following ON
-            // with a join clause, thus, throwing a parsing error
-            // See a detailed explanation here at the official SQLite documentation: "Parsing Ambiguity" on page https://www.sqlite.org/lang_UPSERT.html
-            stringBuilder.appendLine(" SELECT * from CHANGESET WHERE TRUE")
-            if (columnsToUpdate) {
-                stringBuilder.appendLine(" ON CONFLICT (${primaryKeys}) DO UPDATE SET ")
-                stringBuilder.append(stringBuilderUpdateSet).appendLine(";")
-            } else
-                stringBuilder.appendLine(" ON CONFLICT (${primaryKeys}) DO NOTHING; ")
+                stringBuilder.appendLine("INSERT INTO ${tableName.quoted()}")
+                stringBuilder.appendLine("(${stringBuilderArguments})")
+                // use CTE here. The CTE is required in order to make the "ON CONFLICT" statement work. Otherwise SQLite cannot parse it
+                // Note, that we have to add the pseudo WHERE TRUE clause here, as otherwise the SQLite parser may confuse the following ON
+                // with a join clause, thus, throwing a parsing error
+                // See a detailed explanation here at the official SQLite documentation: "Parsing Ambiguity" on page https://www.sqlite.org/lang_UPSERT.html
+                stringBuilder.appendLine(" SELECT * from CHANGESET WHERE TRUE")
+                if (columnsToUpdate) {
+                    stringBuilder.appendLine(" ON CONFLICT (${primaryKeys}) DO UPDATE SET ")
+                    stringBuilder.append(stringBuilderUpdateSet).appendLine(";")
+                } else
+                    stringBuilder.appendLine(" ON CONFLICT (${primaryKeys}) DO NOTHING; ")
+            }
+
+            updateRowSql = stringBuilder.toString()
         }
 
         val parameters = mutableMapOf<String, Any?>(
@@ -467,25 +507,27 @@ class SqliteSyncAdapter(
             row
         )
 
-        val op1 = database.executeNonQuery(stringBuilder.toString(), parameters)
+        val op1 = database.executeNonQuery(updateRowSql, parameters)
 
-        stringBuilder.clear()
-        stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
-        stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
-        stringBuilder.appendLine("[sync_row_is_tombstone] = 0,")
-        stringBuilder.appendLine("[timestamp] = ${SqliteTableBuilder.TimestampValue},")
-        stringBuilder.appendLine("[last_change_datetime] = datetime('now')")
-        stringBuilder.appendLine(
-            "WHERE ${
-                SqliteManagementUtils.whereColumnAndParameters(
-                    this.tableDescription.primaryKeys,
-                    ""
-                )
-            }"
-        )
-        stringBuilder.appendLine(" AND (select changes()) > 0;")
+        if (updateRowChangesSql.isEmpty()) {
+            val stringBuilder = StringBuilder(500)
+            stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
+            stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
+            stringBuilder.appendLine("[sync_row_is_tombstone] = 0,")
+            stringBuilder.appendLine("[timestamp] = ${SqliteTableBuilder.TimestampValue},")
+            stringBuilder.appendLine("[last_change_datetime] = datetime('now')")
+            stringBuilder.appendLine(
+                "WHERE ${
+                    SqliteManagementUtils.whereColumnAndParameters(
+                        this.tableDescription.primaryKeys,
+                        ""
+                    )
+                }"
+            )
+            stringBuilder.appendLine(" AND (select changes()) > 0;")
+        }
 
-        return op1 + database.executeNonQuery(stringBuilder.toString(), parameters)
+        return op1 + database.executeNonQuery(updateRowChangesSql, parameters)
     }
 
     override fun updateMetadata(
@@ -494,37 +536,41 @@ class SqliteSyncAdapter(
         forceWrite: Boolean,
         row: SyncRow
     ): Int {
-        val stringBuilder = StringBuilder()
+        if (updateMetadataSql.isEmpty()) {
+            val stringBuilder = StringBuilder(1000)
 
-        val pkeySelectForInsert = StringBuilder()
-        val pkeyISelectForInsert = StringBuilder()
-        val pkeyAliasSelectForInsert = StringBuilder()
-        val pkeysLeftJoinForInsert = StringBuilder()
-        val pkeysIsNullForInsert = StringBuilder()
+            val pkeySelectForInsert = StringBuilder()
+            val pkeyISelectForInsert = StringBuilder()
+            val pkeyAliasSelectForInsert = StringBuilder()
+            val pkeysLeftJoinForInsert = StringBuilder()
+            val pkeysIsNullForInsert = StringBuilder()
 
-        var and = ""
-        var comma = ""
-        for (pkColumn in tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(pkColumn).quoted().toString()
-            val parameterName = ParserName.parse(pkColumn).unquoted().normalized().toString()
+            var and = ""
+            var comma = ""
+            for (pkColumn in tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(pkColumn).quoted().toString()
+                val parameterName = ParserName.parse(pkColumn).unquoted().normalized().toString()
 
-            pkeySelectForInsert.append("${comma}${columnName}")
-            pkeyISelectForInsert.append("${comma}[i].${columnName}")
-            pkeyAliasSelectForInsert.append("{comma}@${parameterName} as $columnName")
-            pkeysLeftJoinForInsert.append("${and}[side].${columnName} = [i].${columnName}")
-            pkeysIsNullForInsert.append("${and}[side].${columnName} IS NULL")
-            and = " AND "
-            comma = ", "
+                pkeySelectForInsert.append("${comma}${columnName}")
+                pkeyISelectForInsert.append("${comma}[i].${columnName}")
+                pkeyAliasSelectForInsert.append("{comma}@${parameterName} as $columnName")
+                pkeysLeftJoinForInsert.append("${and}[side].${columnName} = [i].${columnName}")
+                pkeysIsNullForInsert.append("${and}[side].${columnName} IS NULL")
+                and = " AND "
+                comma = ", "
+            }
+
+            stringBuilder.appendLine("INSERT OR REPLACE INTO ${trackingName.schema().quoted()} (")
+            stringBuilder.appendLine(pkeySelectForInsert)
+            stringBuilder.appendLine(",[update_scope_id], [sync_row_is_tombstone], [timestamp], [last_change_datetime] )")
+            stringBuilder.appendLine("SELECT $pkeyISelectForInsert ")
+            stringBuilder.appendLine("   , i.sync_scope_id, i.sync_row_is_tombstone, i.sync_timestamp, i.UtcDate")
+            stringBuilder.appendLine("FROM (")
+            stringBuilder.appendLine("  SELECT $pkeyAliasSelectForInsert")
+            stringBuilder.appendLine("          ,@sync_scope_id as sync_scope_id, @sync_row_is_tombstone as sync_row_is_tombstone, ${SqliteTableBuilder.TimestampValue} as sync_timestamp, datetime('now') as UtcDate) as i;")
+
+            updateMetadataSql = stringBuilder.toString()
         }
-
-        stringBuilder.appendLine("INSERT OR REPLACE INTO ${trackingName.schema().quoted()} (")
-        stringBuilder.appendLine(pkeySelectForInsert)
-        stringBuilder.appendLine(",[update_scope_id], [sync_row_is_tombstone], [timestamp], [last_change_datetime] )")
-        stringBuilder.appendLine("SELECT $pkeyISelectForInsert ")
-        stringBuilder.appendLine("   , i.sync_scope_id, i.sync_row_is_tombstone, i.sync_timestamp, i.UtcDate")
-        stringBuilder.appendLine("FROM (")
-        stringBuilder.appendLine("  SELECT $pkeyAliasSelectForInsert")
-        stringBuilder.appendLine("          ,@sync_scope_id as sync_scope_id, @sync_row_is_tombstone as sync_row_is_tombstone, ${SqliteTableBuilder.TimestampValue} as sync_timestamp, datetime('now') as UtcDate) as i;")
 
         val parameters = mutableMapOf<String, Any?>(
             "@sync_force_write" to forceWrite,
@@ -537,49 +583,57 @@ class SqliteSyncAdapter(
             row
         )
 
-        return database.executeNonQuery(stringBuilder.toString(), parameters)
+        return database.executeNonQuery(updateMetadataSql, parameters)
     }
 
     override fun deleteMetadata(timestamp: Long): Int =
         database.executeNonQuery("DELETE FROM ${trackingName.quoted()} WHERE [timestamp] < $timestamp;")
 
     override fun updateUntrackedRows(): Int {
-        val stringBuilder = StringBuilder()
-        val str1 = StringBuilder()
-        val str2 = StringBuilder()
-        val str3 = StringBuilder()
-        val str4 = SqliteManagementUtils.joinTwoTablesOnClause(
-            this.tableDescription.primaryKeys,
-            "[side]",
-            "[base]"
-        )
+        if (updateUntrackedRowsSql.isEmpty()) {
+            val stringBuilder = StringBuilder(1000)
+            val str1 = StringBuilder()
+            val str2 = StringBuilder()
+            val str3 = StringBuilder()
+            val str4 = SqliteManagementUtils.joinTwoTablesOnClause(
+                this.tableDescription.primaryKeys,
+                "[side]",
+                "[base]"
+            )
 
-        stringBuilder.appendLine("INSERT INTO ${trackingName.schema().quoted()} (")
+            stringBuilder.appendLine("INSERT INTO ${trackingName.schema().quoted()} (")
 
 
-        var comma = ""
-        for (pkeyColumn in tableDescription.getPrimaryKeysColumns()) {
-            val pkeyColumnName = ParserName.parse(pkeyColumn).quoted().toString()
+            var comma = ""
+            for (pkeyColumn in tableDescription.getPrimaryKeysColumns()) {
+                val pkeyColumnName = ParserName.parse(pkeyColumn).quoted().toString()
 
-            str1.append("${comma}${pkeyColumnName}")
-            str2.append("${comma}[base].${pkeyColumnName}")
-            str3.append("${comma}[side].${pkeyColumnName}")
+                str1.append("${comma}${pkeyColumnName}")
+                str2.append("${comma}[base].${pkeyColumnName}")
+                str3.append("${comma}[side].${pkeyColumnName}")
 
-            comma = ", "
+                comma = ", "
+            }
+            stringBuilder.append(str1)
+            stringBuilder.appendLine(", [update_scope_id], [sync_row_is_tombstone], [timestamp], [last_change_datetime]")
+            stringBuilder.appendLine(")")
+            stringBuilder.append("SELECT ")
+            stringBuilder.append(str2)
+            stringBuilder.appendLine(", NULL, 0, ${SqliteTableBuilder.TimestampValue}, datetime('now')")
+            stringBuilder.appendLine(
+                "FROM ${
+                    tableName.schema().quoted()
+                } as [base] WHERE NOT EXISTS"
+            )
+            stringBuilder.append("(SELECT ")
+            stringBuilder.append(str3)
+            stringBuilder.appendLine(" FROM ${trackingName.schema().quoted()} as [side] ")
+            stringBuilder.appendLine("WHERE ${str4})")
+
+            updateUntrackedRowsSql = stringBuilder.toString()
         }
-        stringBuilder.append(str1)
-        stringBuilder.appendLine(", [update_scope_id], [sync_row_is_tombstone], [timestamp], [last_change_datetime]")
-        stringBuilder.appendLine(")")
-        stringBuilder.append("SELECT ")
-        stringBuilder.append(str2)
-        stringBuilder.appendLine(", NULL, 0, ${SqliteTableBuilder.TimestampValue}, datetime('now')")
-        stringBuilder.appendLine("FROM ${tableName.schema().quoted()} as [base] WHERE NOT EXISTS")
-        stringBuilder.append("(SELECT ")
-        stringBuilder.append(str3)
-        stringBuilder.appendLine(" FROM ${trackingName.schema().quoted()} as [side] ")
-        stringBuilder.appendLine("WHERE ${str4})")
 
-        return database.executeNonQuery(stringBuilder.toString())
+        return database.executeNonQuery(updateUntrackedRowsSql)
     }
 
     override fun getSelectInitializedChangesWithFilters(): Cursor =
