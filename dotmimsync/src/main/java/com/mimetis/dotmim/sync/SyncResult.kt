@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync
 
 import com.mimetis.dotmim.sync.messages.DatabaseChangesApplied
 import com.mimetis.dotmim.sync.messages.DatabaseChangesSelected
+import kotlinx.serialization.Serializable
 import java.util.*
 import kotlin.math.max
 
@@ -9,10 +10,12 @@ import kotlin.math.max
  * Context of the current Sync session
  * Encapsulates data changes and metadata for a synchronization session.
  */
+@Serializable
 class SyncResult(
     /**
      * Current Session, in progress
      */
+    @Serializable(with = UUIDSerializer::class)
     var sessionId: UUID,
 
     /**
