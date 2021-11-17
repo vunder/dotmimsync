@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync.sqlite
 
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteStatement
 import android.os.Build
 import android.util.Base64
 import com.mimetis.dotmim.sync.DbSyncAdapter
@@ -29,6 +30,8 @@ class SqliteSyncAdapter(
     private var deleteRowSql = ""
     private var deleteRowChangesSql = ""
     private var initializeRowSql = ""
+    private var initializeRowStatement: SQLiteStatement? = null
+    private var initializeRowOrder: List<String>? = null
     private var initializeRowChangesSql = ""
     private var updateRowSql = ""
     private var updateRowChangesSql = ""
@@ -326,7 +329,43 @@ class SqliteSyncAdapter(
             row
         )
 
-        val op1 = database.executeNonQuery(initializeRowSql, parameters)
+        if (initializeRowStatement == null) {
+            val f = processSqlWithArgs(initializeRowSql, parameters)
+            initializeRowStatement = database.compileStatement(f.first)
+            initializeRowOrder = f.third
+        }
+        initializeRowStatement?.clearBindings()
+
+        var index = 1
+        initializeRowOrder?.forEach {
+            when (val value = parameters[it]) {
+                null, is Unit -> initializeRowStatement?.bindNull(index++)
+                is String -> initializeRowStatement?.bindString(index++, value)
+                is Byte -> initializeRowStatement?.bindLong(index++, value.toLong())
+                is Int -> initializeRowStatement?.bindLong(index++, value.toLong())
+                is Long -> initializeRowStatement?.bindLong(index++, value)
+                is Boolean -> initializeRowStatement?.bindLong(index++, if (value) 1 else 0)
+                is ByteArray -> initializeRowStatement?.bindBlob(index++, value)
+                is Double -> initializeRowStatement?.bindDouble(index++, value)
+                is Float -> initializeRowStatement?.bindDouble(index++, value.toDouble())
+                is BigDecimal -> initializeRowStatement?.bindDouble(index++, value.toDouble())
+                is UUID -> initializeRowStatement?.bindString(index++, value.toString().uppercase())
+                is Date -> initializeRowStatement?.bindString(index++, dateFormat.format(value))
+                else -> initializeRowStatement?.bindString(index++, value.toString())
+            }
+        }
+
+        initializeRowStatement?.execute()
+
+        val op1 = database.rawQuery("SELECT changes()", null).use { cursor ->
+            if (cursor.moveToNext())
+                cursor.getInt(0)
+            else
+                0
+        }
+
+
+//        val op1 = database.executeNonQuery(initializeRowSql, parameters)
 
         //stringBuilder.AppendLine($"INSERT OR REPLACE INTO {tableName.Quoted().ToString()}");
         //stringBuilder.AppendLine($"({stringBuilderArguments.ToString()})");
@@ -638,6 +677,10 @@ class SqliteSyncAdapter(
         return database.executeNonQuery(updateUntrackedRowsSql)
     }
 
+    override fun close() {
+        initializeRowStatement?.close()
+    }
+
     override fun getSelectInitializedChangesWithFilters(): Cursor =
         getSelectInitializedChanges()
 
@@ -705,8 +748,9 @@ class SqliteSyncAdapter(
     private fun processSqlWithArgs(
         query: String,
         parameters: Map<String, Any?>
-    ): Pair<String, List<Any?>> {
+    ): Triple<String, List<Any?>, List<String>> {
         val bindArgs = mutableListOf<Any?>()
+        val bindOrder = mutableListOf<String>()
         var sql = query
         do {
             val startIndex = sql.indexOf("@")
@@ -718,6 +762,7 @@ class SqliteSyncAdapter(
                 val name = sql.substring(startIndex, index)
                 val value = parameters[name]
                 bindArgs.add(value)
+                bindOrder.add(name)
 //                    sql =
 //                        "${
 //                            sql.substring(
@@ -729,7 +774,7 @@ class SqliteSyncAdapter(
             }
         } while (startIndex >= 0)
 
-        return Pair(sql, bindArgs)
+        return Triple(sql, bindArgs, bindOrder)
     }
 
     private fun SQLiteDatabase.executeNonQuery(

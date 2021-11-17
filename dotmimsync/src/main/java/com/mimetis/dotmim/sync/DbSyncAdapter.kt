@@ -5,12 +5,13 @@ import com.mimetis.dotmim.sync.set.SyncRow
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
+import java.io.Closeable
 import java.util.*
 
 abstract class DbSyncAdapter(
     val tableDescription: SyncTable,
     val setup: SyncSetup
-) {
+) : Closeable {
     abstract fun getSelectInitializedChangesWithFilters(): Cursor
     abstract fun getSelectInitializedChanges(): Cursor
     abstract fun getSelectChangesWithFilters(lastTimestamp: Long?): Cursor
