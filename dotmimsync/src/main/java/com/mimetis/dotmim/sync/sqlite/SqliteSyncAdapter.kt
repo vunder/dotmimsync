@@ -33,10 +33,14 @@ class SqliteSyncAdapter(
     private var initializeRowStatement: SQLiteStatement? = null
     private var initializeRowOrder: List<String>? = null
     private var initializeRowChangesSql = ""
+    private var initializeRowChangesStatement: SQLiteStatement? = null
+    private var initializeRowChangesOrder: List<String>? = null
     private var updateRowSql = ""
     private var updateRowStatement: SQLiteStatement? = null
     private var updateRowOrder: List<String>? = null
     private var updateRowChangesSql = ""
+    private var updateRowChangesStatement: SQLiteStatement? = null
+    private var updateRowChangesOrder: List<String>? = null
     private var updateMetadataSql = ""
     private var updateUntrackedRowsSql = ""
 
@@ -410,7 +414,52 @@ class SqliteSyncAdapter(
             initializeRowChangesSql = stringBuilder.toString()
         }
 
-        return op1 + database.executeNonQuery(initializeRowChangesSql, parameters)
+        if (initializeRowChangesStatement == null) {
+            val f = processSqlWithArgs(initializeRowChangesSql, parameters)
+            initializeRowChangesStatement = database.compileStatement(f.first)
+            initializeRowChangesOrder = f.third
+        }
+        initializeRowChangesStatement?.clearBindings()
+
+        index = 1
+        initializeRowChangesOrder?.forEach {
+            when (val value = parameters[it]) {
+                null, is Unit -> initializeRowChangesStatement?.bindNull(index++)
+                is String -> initializeRowChangesStatement?.bindString(index++, value)
+                is Byte -> initializeRowChangesStatement?.bindLong(index++, value.toLong())
+                is Int -> initializeRowChangesStatement?.bindLong(index++, value.toLong())
+                is Long -> initializeRowChangesStatement?.bindLong(index++, value)
+                is Boolean -> initializeRowChangesStatement?.bindLong(index++, if (value) 1 else 0)
+                is ByteArray -> initializeRowChangesStatement?.bindBlob(index++, value)
+                is Double -> initializeRowChangesStatement?.bindDouble(index++, value)
+                is Float -> initializeRowChangesStatement?.bindDouble(index++, value.toDouble())
+                is BigDecimal -> initializeRowChangesStatement?.bindDouble(
+                    index++,
+                    value.toDouble()
+                )
+                is UUID -> initializeRowChangesStatement?.bindString(
+                    index++,
+                    value.toString().uppercase()
+                )
+                is Date -> initializeRowChangesStatement?.bindString(
+                    index++,
+                    dateFormat.format(value)
+                )
+                else -> initializeRowChangesStatement?.bindString(index++, value.toString())
+            }
+        }
+
+        initializeRowChangesStatement?.execute()
+
+        return op1 + database.rawQuery("SELECT changes()", null).use { cursor ->
+            if (cursor.moveToNext())
+                cursor.getInt(0)
+            else
+                0
+        }
+
+
+//        return op1 + database.executeNonQuery(initializeRowChangesSql, parameters)
     }
 
     override fun updateRow(
@@ -606,7 +655,45 @@ class SqliteSyncAdapter(
             updateRowChangesSql = stringBuilder.toString()
         }
 
-        return op1 + database.executeNonQuery(updateRowChangesSql, parameters)
+
+        if (updateRowChangesStatement == null) {
+            val f = processSqlWithArgs(updateRowChangesSql, parameters)
+            updateRowChangesStatement = database.compileStatement(f.first)
+            updateRowChangesOrder = f.third
+        }
+        updateRowChangesStatement?.clearBindings()
+
+        index = 1
+        updateRowChangesOrder?.forEach {
+            when (val value = parameters[it]) {
+                null, is Unit -> updateRowChangesStatement?.bindNull(index++)
+                is String -> updateRowChangesStatement?.bindString(index++, value)
+                is Byte -> updateRowChangesStatement?.bindLong(index++, value.toLong())
+                is Int -> updateRowChangesStatement?.bindLong(index++, value.toLong())
+                is Long -> updateRowChangesStatement?.bindLong(index++, value)
+                is Boolean -> updateRowChangesStatement?.bindLong(index++, if (value) 1 else 0)
+                is ByteArray -> updateRowChangesStatement?.bindBlob(index++, value)
+                is Double -> updateRowChangesStatement?.bindDouble(index++, value)
+                is Float -> updateRowChangesStatement?.bindDouble(index++, value.toDouble())
+                is BigDecimal -> updateRowChangesStatement?.bindDouble(index++, value.toDouble())
+                is UUID -> updateRowChangesStatement?.bindString(index++, value.toString().uppercase())
+                is Date -> updateRowChangesStatement?.bindString(index++, dateFormat.format(value))
+                else -> updateRowChangesStatement?.bindString(index++, value.toString())
+            }
+        }
+
+        updateRowChangesStatement?.execute()
+
+        return op1 + database.rawQuery("SELECT changes()", null).use { cursor ->
+            if (cursor.moveToNext())
+                cursor.getInt(0)
+            else
+                0
+        }
+
+
+
+//        return op1 + database.executeNonQuery(updateRowChangesSql, parameters)
     }
 
     override fun updateMetadata(
