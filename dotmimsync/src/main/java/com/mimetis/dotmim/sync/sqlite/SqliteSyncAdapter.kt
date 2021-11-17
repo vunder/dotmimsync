@@ -753,7 +753,8 @@ class SqliteSyncAdapter(
             DbType.Binary ->
                 Base64.decode(value.toString(), Base64.NO_WRAP)
             DbType.DateTime ->
-                dateFormat.parse(value.toString().replace("T", " "))
+//                dateFormat.parse(value.toString().replace("T", " "))
+                value.toString().replace("T", " ")
             DbType.Guid ->
                 value.toString().uppercase()
             else -> value
