@@ -28,8 +28,7 @@ class SyncRow(@Transient val length: Int = 0) {
     }
 
     operator fun get(columnName: String): Any? {
-        val column = table.columns!![columnName]
-        val index = table.columns!!.indexOf(column)
+        val index = table.columns!!.getIndex(columnName)
         return this[index]
     }
 
