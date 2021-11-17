@@ -19,7 +19,7 @@ Android port for [Dotmim.Sync](https://github.com/Mimetis/Dotmim.Sync) C# librar
     }
 ```
 
-1.0-beta2 -> 0.9.0
+1.0-beta2 -> 0.9.1
 
 Necessary to add
 ```

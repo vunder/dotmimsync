@@ -3,7 +3,7 @@ package com.mimetis.dotmim.sync
 import kotlin.math.pow
 
 object SyncVersion {
-    const val current: String = "0.9.0"
+    const val current: String = "0.9.1"
     fun ensureVersion(v: String): String =
             if (v == "1") "0.5.7" else v
 
