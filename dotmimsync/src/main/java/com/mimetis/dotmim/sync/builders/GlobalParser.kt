@@ -1,11 +1,13 @@
 package com.mimetis.dotmim.sync.builders
 
+import java.util.concurrent.ConcurrentHashMap
+
 object GlobalParser {
-    private val parsers: Map<String, Lazy<ParserString>> = HashMap()
+    private val parsers = ConcurrentHashMap<String, Lazy<ParserString>>()
 
     fun getParserString(key: String): ParserString {
         // Try to get the instance
-        val parserStringRetrieved = parsers.getOrElse(key) { lazy { internalParse(key) } }
+        val parserStringRetrieved = parsers.getOrPut(key) { lazy { internalParse(key) } }
 
         return parserStringRetrieved.value
     }
