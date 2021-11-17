@@ -34,6 +34,8 @@ class SqliteSyncAdapter(
     private var initializeRowOrder: List<String>? = null
     private var initializeRowChangesSql = ""
     private var updateRowSql = ""
+    private var updateRowStatement: SQLiteStatement? = null
+    private var updateRowOrder: List<String>? = null
     private var updateRowChangesSql = ""
     private var updateMetadataSql = ""
     private var updateUntrackedRowsSql = ""
@@ -546,7 +548,43 @@ class SqliteSyncAdapter(
             row
         )
 
-        val op1 = database.executeNonQuery(updateRowSql, parameters)
+        if (updateRowStatement == null) {
+            val f = processSqlWithArgs(updateRowSql, parameters)
+            updateRowStatement = database.compileStatement(f.first)
+            updateRowOrder = f.third
+        }
+        updateRowStatement?.clearBindings()
+
+        var index = 1
+        updateRowOrder?.forEach {
+            when (val value = parameters[it]) {
+                null, is Unit -> updateRowStatement?.bindNull(index++)
+                is String -> updateRowStatement?.bindString(index++, value)
+                is Byte -> updateRowStatement?.bindLong(index++, value.toLong())
+                is Int -> updateRowStatement?.bindLong(index++, value.toLong())
+                is Long -> updateRowStatement?.bindLong(index++, value)
+                is Boolean -> updateRowStatement?.bindLong(index++, if (value) 1 else 0)
+                is ByteArray -> updateRowStatement?.bindBlob(index++, value)
+                is Double -> updateRowStatement?.bindDouble(index++, value)
+                is Float -> updateRowStatement?.bindDouble(index++, value.toDouble())
+                is BigDecimal -> updateRowStatement?.bindDouble(index++, value.toDouble())
+                is UUID -> updateRowStatement?.bindString(index++, value.toString().uppercase())
+                is Date -> updateRowStatement?.bindString(index++, dateFormat.format(value))
+                else -> updateRowStatement?.bindString(index++, value.toString())
+            }
+        }
+
+        updateRowStatement?.execute()
+
+        val op1 = database.rawQuery("SELECT changes()", null).use { cursor ->
+            if (cursor.moveToNext())
+                cursor.getInt(0)
+            else
+                0
+        }
+
+
+//        val op1 = database.executeNonQuery(updateRowSql, parameters)
 
         if (updateRowChangesSql.isEmpty()) {
             val stringBuilder = StringBuilder(500)
