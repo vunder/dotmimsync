@@ -525,6 +525,8 @@ class SqliteSyncAdapter(
                 }"
             )
             stringBuilder.appendLine(" AND (select changes()) > 0;")
+
+            updateRowChangesSql = stringBuilder.toString()
         }
 
         return op1 + database.executeNonQuery(updateRowChangesSql, parameters)
