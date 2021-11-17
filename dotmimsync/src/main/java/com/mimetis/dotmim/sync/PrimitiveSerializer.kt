@@ -2,7 +2,6 @@ package com.mimetis.dotmim.sync
 
 import android.annotation.SuppressLint
 import android.util.Base64
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PolymorphicKind
@@ -22,8 +21,7 @@ object PrimitiveSerializer : KSerializer<Any> {
     @SuppressLint("SimpleDateFormat")
     private val simpleDateFormat = SimpleDateFormat(dateFormat).apply { timeZone = gmtTimeZone }
 
-    @ExperimentalSerializationApi
-    @InternalSerializationApi
+    @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor =
         buildSerialDescriptor("PrimitiveSerializer", PolymorphicKind.SEALED)
 
