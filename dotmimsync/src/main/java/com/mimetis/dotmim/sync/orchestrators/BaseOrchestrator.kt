@@ -1743,6 +1743,9 @@ abstract class BaseOrchestrator(
             return Triple(context, batch, changes)
         }
 
+        // Call interceptor
+        intercept(DatabaseChangesSelectingArgs(context, message))
+
         // create local directory
         if (message.batchSize > 0 && message.batchDirectory.isNotBlank() && !File(message.batchDirectory).exists()) {
             File(message.batchDirectory).mkdir()
@@ -1784,103 +1787,109 @@ abstract class BaseOrchestrator(
             // Get Command
             //var selectIncrementalChangesCommand = this.getSelectChangesCommand(context, syncTable, message.setup, message.isNew)
 
-            // Statistics
-            val tableChangesSelected =
-                TableChangesSelected(syncTable.tableName, syncTable.schemaName)
+            // launch interceptor if any
+            val args = TableChangesSelectingArgs(context, syncTable)
+            intercept(args)
 
-            // Create a chnages table with scope columns
-            var changesSetTable = DbSyncAdapter.createChangesTable(
-                message.schema.tables[syncTable.tableName, syncTable.schemaName]!!,
-                changesSet
-            )
+            if (!args.cancel) {
+                // Statistics
+                val tableChangesSelected =
+                    TableChangesSelected(syncTable.tableName, syncTable.schemaName)
 
-            val cursor = this.getSelectChangesCursor(
-                context,
-                syncTable,
-                message.setup,
-                message.isNew,
-                message.lastTimestamp
-            )
+                // Create a chnages table with scope columns
+                var changesSetTable = DbSyncAdapter.createChangesTable(
+                    message.schema.tables[syncTable.tableName, syncTable.schemaName]!!,
+                    changesSet
+                )
 
-            // memory size total
-            var rowsMemorySize = 0.0
+                val cursor = this.getSelectChangesCursor(
+                    context,
+                    syncTable,
+                    message.setup,
+                    message.isNew,
+                    message.lastTimestamp
+                )
 
-            while (cursor.moveToNext()) {
+                // memory size total
+                var rowsMemorySize = 0.0
+
+                while (cursor.moveToNext()) {
 //                Log.d(TAG, "Reading ${changesSetTable.tableName} row: ${cursor.position} of ${cursor.count}")
-                // Create a row from dataReader
-                val row = createSyncRowFromReader(cursor, changesSetTable)
+                    // Create a row from dataReader
+                    val row = createSyncRowFromReader(cursor, changesSetTable)
 
-                // Add the row to the changes set
-                changesSetTable.rows.add(row)
+                    // Add the row to the changes set
+                    changesSetTable.rows.add(row)
 
-                // Set the correct state to be applied
-                if (row.rowState == DataRowState.Deleted)
-                    tableChangesSelected.deletes++
-                else if (row.rowState == DataRowState.Modified)
-                    tableChangesSelected.upserts++
+                    // Set the correct state to be applied
+                    if (row.rowState == DataRowState.Deleted)
+                        tableChangesSelected.deletes++
+                    else if (row.rowState == DataRowState.Modified)
+                        tableChangesSelected.upserts++
 
-                // calculate row size if in batch mode
-                if (isBatch) {
-                    val fieldsSize = ContainerTable.getRowSizeFromDataRow(row.toArray())
-                    val finalFieldSize = fieldsSize / 1024.0
+                    // calculate row size if in batch mode
+                    if (isBatch) {
+                        val fieldsSize = ContainerTable.getRowSizeFromDataRow(row.toArray())
+                        val finalFieldSize = fieldsSize / 1024.0
 
-                    if (finalFieldSize > message.batchSize)
-                        throw RowOverSizedException(finalFieldSize.toString())
+                        if (finalFieldSize > message.batchSize)
+                            throw RowOverSizedException(finalFieldSize.toString())
 
-                    // Calculate the new memory size
-                    rowsMemorySize += finalFieldSize
+                        // Calculate the new memory size
+                        rowsMemorySize += finalFieldSize
 
-                    // Next line if we don't reach the batch size yet.
-                    if (rowsMemorySize <= message.batchSize)
-                        continue
+                        // Next line if we don't reach the batch size yet.
+                        if (rowsMemorySize <= message.batchSize)
+                            continue
 
-                    // Check interceptor
-                    val batchTableChangesSelectedArgs = TableChangesSelectedArgs(
-                        context,
-                        changesSetTable,
-                        tableChangesSelected
-                    )
-                    this.intercept(batchTableChangesSelectedArgs)
+                        // Check interceptor
+                        val batchTableChangesSelectedArgs = TableChangesSelectedArgs(
+                            context,
+                            changesSetTable,
+                            tableChangesSelected
+                        )
+                        this.intercept(batchTableChangesSelectedArgs)
 
-                    // add changes to batchinfo
-                    batchInfo.addChanges(changesSet, batchIndex, false, this)
+                        // add changes to batchinfo
+                        batchInfo.addChanges(changesSet, batchIndex, false, this)
 
-                    // increment batch index
-                    batchIndex++
+                        // increment batch index
+                        batchIndex++
 
-                    // we know the datas are serialized here, so we can flush  the set
-                    changesSet.clear()
+                        // we know the datas are serialized here, so we can flush  the set
+                        changesSet.clear()
 
-                    // Recreate an empty ContainerSet and a ContainerTable
-                    changesSet = SyncSet()
+                        // Recreate an empty ContainerSet and a ContainerTable
+                        changesSet = SyncSet()
 
-                    changesSetTable = DbSyncAdapter.createChangesTable(
-                        message.schema.tables[syncTable.tableName, syncTable.schemaName]!!,
-                        changesSet
-                    )
+                        changesSetTable = DbSyncAdapter.createChangesTable(
+                            message.schema.tables[syncTable.tableName, syncTable.schemaName]!!,
+                            changesSet
+                        )
 
-                    // Init the row memory size
-                    rowsMemorySize = 0.0
+                        // Init the row memory size
+                        rowsMemorySize = 0.0
+                    }
                 }
+
+                cursor.close()
+
+                // We don't report progress if no table changes is empty, to limit verbosity
+                if (tableChangesSelected.deletes > 0 || tableChangesSelected.upserts > 0)
+                    changesSelected.tableChangesSelected.add(tableChangesSelected)
+
+                // even if no rows raise the interceptor
+                val tableChangesSelectedArgs =
+                    TableChangesSelectedArgs(context, changesSetTable, tableChangesSelected)
+                this.intercept(tableChangesSelectedArgs)
+
+                context.progressPercentage =
+                    currentProgress + (cptSyncTable * 0.2 / message.schema.tables.size)
+
+                // only raise report progress if we have something
+                if (tableChangesSelectedArgs.tableChangesSelected.totalChanges > 0)
+                    this.reportProgress(context, progress, tableChangesSelectedArgs)
             }
-
-            cursor.close()
-
-            // We don't report progress if no table changes is empty, to limit verbosity
-            if (tableChangesSelected.deletes > 0 || tableChangesSelected.upserts > 0)
-                changesSelected.tableChangesSelected.add(tableChangesSelected)
-
-            // even if no rows raise the interceptor
-            val tableChangesSelectedArgs =
-                TableChangesSelectedArgs(context, changesSetTable, tableChangesSelected)
-            this.intercept(tableChangesSelectedArgs)
-
-            context.progressPercentage =
-                currentProgress + (cptSyncTable * 0.2 / message.schema.tables.size)
-
-            // only raise report progress if we have something
-            if (tableChangesSelectedArgs.tableChangesSelected.totalChanges > 0)
-                this.reportProgress(context, progress, tableChangesSelectedArgs)
         }
 
         // We are in batch mode, and we are at the last batchpart info
