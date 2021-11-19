@@ -6,6 +6,9 @@ import com.mimetis.dotmim.sync.ArrayListLikeSerializer
 
 @Serializable(with = SyncColumnsSerializer::class)
 class SyncColumns() : ArrayList<SyncColumn>() {
+    private val columnsDictionary = HashMap<String, SyncColumn?>()
+    private val columnsIndexDictionary = HashMap<String, Int>()
+
     /**
      * Column's schema
      */
@@ -20,11 +23,29 @@ class SyncColumns() : ArrayList<SyncColumn>() {
         this.table = table
     }
 
+    fun getIndex(columnName: String): Int =
+        columnsIndexDictionary.getOrPut(columnName) {
+            this.indexOfFirst { c ->
+                c.columnName.equals(
+                    columnName,
+                    true
+                )
+            }
+        }
+
     /**
      * Get a Column by its name
      */
     operator fun get(columnName: String): SyncColumn? =
-            this.firstOrNull { c -> c.columnName.equals(columnName, true) }
+        columnsDictionary.getOrPut(columnName) {
+            this.firstOrNull { c ->
+                c.columnName.equals(
+                    columnName,
+                    true
+                )
+            }
+        }
+//            this.firstOrNull { c -> c.columnName.equals(columnName, true) }
 
     override fun clear() {
         //this.forEach { it.clear() }
@@ -32,4 +53,5 @@ class SyncColumns() : ArrayList<SyncColumn>() {
     }
 }
 
-object SyncColumnsSerializer : ArrayListLikeSerializer<SyncColumns, SyncColumn>(SyncColumn.serializer())
+object SyncColumnsSerializer :
+    ArrayListLikeSerializer<SyncColumns, SyncColumn>(SyncColumn.serializer())

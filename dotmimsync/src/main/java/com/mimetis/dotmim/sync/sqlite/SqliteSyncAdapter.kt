@@ -11,10 +11,8 @@ import com.mimetis.dotmim.sync.set.SyncRow
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.DbType
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.min
 
 class SqliteSyncAdapter(
     tableDescription: SyncTable,
@@ -24,6 +22,7 @@ class SqliteSyncAdapter(
     private val database: SQLiteDatabase
 ) : DbSyncAdapter(tableDescription, setup) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    private var getSelectChangesSql = ""
 
     override fun getSelectInitializedChanges(): Cursor {
         val stringBuilder = StringBuilder("SELECT ")
@@ -47,50 +46,58 @@ class SqliteSyncAdapter(
     }
 
     override fun getSelectChanges(lastTimestamp: Long?): Cursor {
-        val stringBuilder = StringBuilder("SELECT ")
-        for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(pkColumn).quoted().toString()
-            stringBuilder.appendLine("\t[side].$columnName, ")
+        if (getSelectChangesSql.isEmpty()) {
+            val stringBuilder = StringBuilder("SELECT ")
+            for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(pkColumn).quoted().toString()
+                stringBuilder.appendLine("\t[side].$columnName, ")
+            }
+            for (mutableColumn in this.tableDescription.getMutableColumns()) {
+                val columnName = ParserName.parse(mutableColumn).quoted().toString()
+                stringBuilder.appendLine("\t[base].$columnName, ")
+            }
+            stringBuilder.appendLine("\t[side].[sync_row_is_tombstone], ")
+            stringBuilder.appendLine("\t[side].[update_scope_id] as [sync_update_scope_id] ")
+            stringBuilder.appendLine("FROM ${trackingName.quoted()} [side]")
+            stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} [base]")
+            stringBuilder.append("ON ")
+
+            var empty = ""
+            for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
+                val columnName = ParserName.parse(pkColumn).quoted().toString()
+
+                stringBuilder.append("$empty[base].$columnName = [side].$columnName")
+                empty = " AND "
+            }
+            stringBuilder.appendLine()
+            //stringBuilder.appendLine("WHERE (");
+            //stringBuilder.appendLine("\t[side].[timestamp] > @sync_min_timestamp");
+            //stringBuilder.appendLine("\tAND ([side].[update_scope_id] <> @sync_scope_id OR [side].[update_scope_id] IS NULL)");
+            //stringBuilder.appendLine(")");
+
+            // Looking at discussion https://github.com/Mimetis/Dotmim.Sync/discussions/453, trying to remove ([side].[update_scope_id] <> @sync_scope_id)
+            // since we are sure that sqlite will never be a server side database
+
+            stringBuilder.appendLine("WHERE ([side].[timestamp] > @sync_min_timestamp AND [side].[update_scope_id] IS NULL)")
+
+            getSelectChangesSql = stringBuilder.toString()
         }
-        for (mutableColumn in this.tableDescription.getMutableColumns()) {
-            val columnName = ParserName.parse(mutableColumn).quoted().toString()
-            stringBuilder.appendLine("\t[base].$columnName, ")
-        }
-        stringBuilder.appendLine("\t[side].[sync_row_is_tombstone], ")
-        stringBuilder.appendLine("\t[side].[update_scope_id] as [sync_update_scope_id] ")
-        stringBuilder.appendLine("FROM ${trackingName.quoted()} [side]")
-        stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} [base]")
-        stringBuilder.append("ON ")
 
-        var empty = ""
-        for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
-            val columnName = ParserName.parse(pkColumn).quoted().toString()
-
-            stringBuilder.append("$empty[base].$columnName = [side].$columnName")
-            empty = " AND "
-        }
-        stringBuilder.appendLine()
-        //stringBuilder.appendLine("WHERE (");
-        //stringBuilder.appendLine("\t[side].[timestamp] > @sync_min_timestamp");
-        //stringBuilder.appendLine("\tAND ([side].[update_scope_id] <> @sync_scope_id OR [side].[update_scope_id] IS NULL)");
-        //stringBuilder.appendLine(")");
-
-        // Looking at discussion https://github.com/Mimetis/Dotmim.Sync/discussions/453, trying to remove ([side].[update_scope_id] <> @sync_scope_id)
-        // since we are sure that sqlite will never be a server side database
-
-        stringBuilder.appendLine("WHERE ([side].[timestamp] > @sync_min_timestamp AND [side].[update_scope_id] IS NULL)")
-
-        return database.rawQuery(stringBuilder.toString(), arrayOf((lastTimestamp ?: 0).toString()))
+        return database.rawQuery(getSelectChangesSql, arrayOf((lastTimestamp ?: 0).toString()))
     }
 
-    override fun getSelectRow(primaryKeyRow: SyncRow): Cursor {
-        val stringBuilder = StringBuilder("SELECT ")
-        stringBuilder.appendLine()
+    private val getSelectRowQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
+        val stringBuilder = StringBuilder(1000)
+            .appendLine("SELECT ")
         val stringBuilder1 = StringBuilder()
         var empty = ""
         for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
             val columnName = ParserName.parse(pkColumn).quoted().toString()
-            val unquotedColumnName = ParserName.parse(pkColumn).unquoted().normalized().toString()
+            val unquotedColumnName =
+                ParserName.parse(pkColumn).unquoted().normalized().toString()
             stringBuilder.appendLine("\t[side].${columnName}, ")
             stringBuilder1.append("${empty}[side].${columnName} = @${unquotedColumnName}")
             empty = " AND "
@@ -115,6 +122,10 @@ class SqliteSyncAdapter(
         stringBuilder.append("WHERE $stringBuilder1")
         stringBuilder.append(";")
 
+        return@SqliteQueryWrapper stringBuilder.toString()
+    }
+
+    override fun getSelectRow(primaryKeyRow: SyncRow): Cursor {
         val parameters = mutableMapOf<String, Any?>()
         fillParametersFromColumns(
             parameters,
@@ -123,8 +134,7 @@ class SqliteSyncAdapter(
             stringOnly = true
         )
 
-        val f = processSqlWithArgs(stringBuilder.toString(), parameters)
-        return database.rawQuery(f.first, f.second.map { it.toString() }.toTypedArray())
+        return getSelectRowQuery.executeCursor(parameters)
     }
 
     override fun enableConstraints() =
@@ -141,14 +151,11 @@ class SqliteSyncAdapter(
         database.execSQL(stringBuilder.toString())
     }
 
-    override fun deleteRow(
-        scopeId: UUID?,
-        syncTimeStamp: Long?,
-        isDeleted: Boolean,
-        forceWrite: Boolean,
-        row: SyncRow
-    ): Int {
-        val stringBuilder = StringBuilder()
+    private val deleteRowQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
+        val stringBuilder = StringBuilder(1000)
         val str1 = SqliteManagementUtils.joinTwoTablesOnClause(
             this.tableDescription.primaryKeys,
             "[c]",
@@ -204,20 +211,14 @@ class SqliteSyncAdapter(
         stringBuilder.appendLine("  OR @sync_force_write = 1")
         stringBuilder.appendLine(" );")
 
-        val parameters = mutableMapOf<String, Any?>(
-            "@sync_force_write" to forceWrite,
-            "@sync_min_timestamp" to syncTimeStamp,
-            "@sync_scope_id" to scopeId
-        )
-        fillParametersFromColumns(
-            parameters,
-            this.tableDescription.getPrimaryKeysColumns().filter { c -> !c.isReadOnly },
-            row
-        )
+        return@SqliteQueryWrapper stringBuilder.toString()
+    }
 
-        val op1 = database.executeNonQuery(stringBuilder.toString(), parameters)
-
-        stringBuilder.clear()
+    private val deleteRowTrackingQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
+        val stringBuilder = StringBuilder(500)
         stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
         stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
         stringBuilder.appendLine("[sync_row_is_tombstone] = 1,")
@@ -232,16 +233,38 @@ class SqliteSyncAdapter(
         )
         stringBuilder.appendLine(" AND (select changes()) > 0")
 
-        return op1 + database.executeNonQuery(stringBuilder.toString(), parameters)
+        return@SqliteQueryWrapper stringBuilder.toString()
     }
 
-    override fun initializeRow(
+    override fun deleteRow(
         scopeId: UUID?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
         row: SyncRow
     ): Int {
+        val parameters = mutableMapOf<String, Any?>(
+            "@sync_force_write" to forceWrite,
+            "@sync_min_timestamp" to syncTimeStamp,
+            "@sync_scope_id" to scopeId
+        )
+        fillParametersFromColumns(
+            parameters,
+            this.tableDescription.getPrimaryKeysColumns().filter { c -> !c.isReadOnly },
+            row
+        )
+
+        val op1 = deleteRowQuery.executeStatement(parameters)
+
+        val op2 = deleteRowTrackingQuery.executeStatement(parameters)
+
+        return op1 + op2
+    }
+
+    private val initializeRowQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
         val stringBuilderArguments = StringBuilder()
         val stringBuilderParameters = StringBuilder()
         val stringBuilderParametersValues = StringBuilder()
@@ -263,7 +286,7 @@ class SqliteSyncAdapter(
         )
 
         // Generate Update command
-        val stringBuilder = StringBuilder()
+        val stringBuilder = StringBuilder(1000)
 
         for (mutableColumn in this.tableDescription.getMutableColumns(
             includeAutoIncrement = false,
@@ -284,40 +307,14 @@ class SqliteSyncAdapter(
         stringBuilder.append("VALUES (${stringBuilderParametersValues2}) ")
         stringBuilder.appendLine(";")
 
-        val parameters = mutableMapOf<String, Any?>(
-            "@sync_force_write" to forceWrite,
-            "@sync_min_timestamp" to syncTimeStamp,
-            "@sync_scope_id" to scopeId
-        )
-        fillParametersFromColumns(
-            parameters,
-            this.tableDescription.columns!!.filter { c -> !c.isReadOnly },
-            row
-        )
+        return@SqliteQueryWrapper stringBuilder.toString()
+    }
 
-        val op1 = database.executeNonQuery(stringBuilder.toString(), parameters)
-
-        //stringBuilder.AppendLine($"INSERT OR REPLACE INTO {tableName.Quoted().ToString()}");
-        //stringBuilder.AppendLine($"({stringBuilderArguments.ToString()})");
-        //stringBuilder.AppendLine($"SELECT {stringBuilderParameters.ToString()} ");
-        //stringBuilder.AppendLine($"FROM (SELECT {stringBuilderParametersValues.ToString()}) as [c]");
-        //stringBuilder.AppendLine($"LEFT JOIN {trackingName.Quoted().ToString()} AS [side] ON {str1}");
-        //stringBuilder.AppendLine($"LEFT JOIN {tableName.Quoted().ToString()} AS [base] ON {str2}");
-        //stringBuilder.Append($"WHERE ({SqliteManagementUtils.WhereColumnAndParameters(this.TableDescription.PrimaryKeys, "[base]")} ");
-        //stringBuilder.AppendLine($"AND ([side].[timestamp] < @sync_min_timestamp OR [side].[update_scope_id] = @sync_scope_id)) ");
-        //stringBuilder.Append($"OR ({SqliteManagementUtils.WhereColumnIsNull(this.TableDescription.PrimaryKeys, "[base]")} ");
-        //stringBuilder.AppendLine($"AND ([side].[timestamp] < @sync_min_timestamp OR [side].[timestamp] IS NULL)) ");
-        //stringBuilder.Append($"OR @sync_force_write = 1");
-        //stringBuilder.AppendLine($";");
-
-
-        //stringBuilder.AppendLine($"INSERT OR REPLACE INTO {tableName.Quoted().ToString()}");
-        //stringBuilder.AppendLine($"({stringBuilderArguments.ToString()})");
-        //stringBuilder.AppendLine($"SELECT {stringBuilderParameters.ToString()} ");
-        //stringBuilder.AppendLine($"FROM (SELECT {stringBuilderParametersValues.ToString()}) as [c]");
-        //stringBuilder.AppendLine($"LEFT JOIN {trackingName.Quoted().ToString()} AS [side] ON {str1}");
-
-        stringBuilder.clear()
+    private val initializeRowTrackingQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
+        val stringBuilder = StringBuilder(500)
         stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
         stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
         stringBuilder.appendLine("[sync_row_is_tombstone] = 0,")
@@ -333,16 +330,38 @@ class SqliteSyncAdapter(
         stringBuilder.append(" AND (select changes()) > 0")
         stringBuilder.appendLine(";")
 
-        return op1 + database.executeNonQuery(stringBuilder.toString(), parameters)
+        return@SqliteQueryWrapper stringBuilder.toString()
     }
 
-    override fun updateRow(
+    override fun initializeRow(
         scopeId: UUID?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
         row: SyncRow
     ): Int {
+        val parameters = mutableMapOf<String, Any?>(
+            "@sync_force_write" to forceWrite,
+            "@sync_min_timestamp" to syncTimeStamp,
+            "@sync_scope_id" to scopeId
+        )
+        fillParametersFromColumns(
+            parameters,
+            this.tableDescription.columns!!.filter { c -> !c.isReadOnly },
+            row
+        )
+
+        val op1 = initializeRowQuery.executeStatement(parameters)
+
+        val op2 = initializeRowTrackingQuery.executeStatement(parameters)
+
+        return op1 + op2
+    }
+
+    private val sqliteRowQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
         val stringBuilderArguments = StringBuilder()
         val stringBuilderParameters = StringBuilder()
         val stringBuilderParametersValues = StringBuilder()
@@ -359,7 +378,7 @@ class SqliteSyncAdapter(
         )
 
         // Generate Update command
-        val stringBuilder = StringBuilder()
+        val stringBuilder = StringBuilder(1000)
 
         for (mutableColumn in this.tableDescription.getMutableColumns(
             includeAutoIncrement = false,
@@ -456,20 +475,14 @@ class SqliteSyncAdapter(
                 stringBuilder.appendLine(" ON CONFLICT (${primaryKeys}) DO NOTHING; ")
         }
 
-        val parameters = mutableMapOf<String, Any?>(
-            "@sync_force_write" to forceWrite,
-            "@sync_min_timestamp" to syncTimeStamp,
-            "@sync_scope_id" to scopeId
-        )
-        fillParametersFromColumns(
-            parameters,
-            this.tableDescription.columns!!.filter { c -> !c.isReadOnly },
-            row
-        )
+        return@SqliteQueryWrapper stringBuilder.toString()
+    }
 
-        val op1 = database.executeNonQuery(stringBuilder.toString(), parameters)
-
-        stringBuilder.clear()
+    private val sqliteRowTrackingQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
+        val stringBuilder = StringBuilder(500)
         stringBuilder.appendLine("UPDATE OR IGNORE ${trackingName.quoted()} SET ")
         stringBuilder.appendLine("[update_scope_id] = @sync_scope_id,")
         stringBuilder.appendLine("[sync_row_is_tombstone] = 0,")
@@ -485,16 +498,39 @@ class SqliteSyncAdapter(
         )
         stringBuilder.appendLine(" AND (select changes()) > 0;")
 
-        return op1 + database.executeNonQuery(stringBuilder.toString(), parameters)
+        return@SqliteQueryWrapper stringBuilder.toString()
     }
 
-    override fun updateMetadata(
+    override fun updateRow(
         scopeId: UUID?,
+        syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
         row: SyncRow
     ): Int {
-        val stringBuilder = StringBuilder()
+        val parameters = mutableMapOf<String, Any?>(
+            "@sync_force_write" to forceWrite,
+            "@sync_min_timestamp" to syncTimeStamp,
+            "@sync_scope_id" to scopeId
+        )
+        fillParametersFromColumns(
+            parameters,
+            this.tableDescription.columns!!.filter { c -> !c.isReadOnly },
+            row
+        )
+
+        val op1 = sqliteRowQuery.executeStatement(parameters)
+
+        val op2 = sqliteRowTrackingQuery.executeStatement(parameters)
+
+        return op1 + op2
+    }
+
+    private var sqliteMetadataQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,
+        dateFormat
+    ) {
+        val stringBuilder = StringBuilder(1000)
 
         val pkeySelectForInsert = StringBuilder()
         val pkeyISelectForInsert = StringBuilder()
@@ -526,6 +562,15 @@ class SqliteSyncAdapter(
         stringBuilder.appendLine("  SELECT $pkeyAliasSelectForInsert")
         stringBuilder.appendLine("          ,@sync_scope_id as sync_scope_id, @sync_row_is_tombstone as sync_row_is_tombstone, ${SqliteTableBuilder.TimestampValue} as sync_timestamp, datetime('now') as UtcDate) as i;")
 
+        return@SqliteQueryWrapper stringBuilder.toString()
+    }
+
+    override fun updateMetadata(
+        scopeId: UUID?,
+        isDeleted: Boolean,
+        forceWrite: Boolean,
+        row: SyncRow
+    ): Int {
         val parameters = mutableMapOf<String, Any?>(
             "@sync_force_write" to forceWrite,
             "@sync_scope_id" to scopeId,
@@ -537,14 +582,24 @@ class SqliteSyncAdapter(
             row
         )
 
-        return database.executeNonQuery(stringBuilder.toString(), parameters)
+        return sqliteMetadataQuery.executeStatement(parameters)
     }
 
-    override fun deleteMetadata(timestamp: Long): Int =
-        database.executeNonQuery("DELETE FROM ${trackingName.quoted()} WHERE [timestamp] < $timestamp;")
+    override fun deleteMetadata(timestamp: Long): Int {
+        database.execSQL("DELETE FROM ${trackingName.quoted()} WHERE [timestamp] < $timestamp;")
 
-    override fun updateUntrackedRows(): Int {
-        val stringBuilder = StringBuilder()
+        return database.rawQuery("SELECT changes()", null).use { cursor ->
+            if (cursor.moveToNext())
+                cursor.getInt(0)
+            else
+                0
+        }
+    }
+
+    private val sqliteUntrackedRowsQuery: SqliteQueryWrapper = SqliteQueryWrapper(
+        database,dateFormat
+    ) {
+        val stringBuilder = StringBuilder(1000)
         val str1 = StringBuilder()
         val str2 = StringBuilder()
         val str3 = StringBuilder()
@@ -573,13 +628,27 @@ class SqliteSyncAdapter(
         stringBuilder.append("SELECT ")
         stringBuilder.append(str2)
         stringBuilder.appendLine(", NULL, 0, ${SqliteTableBuilder.TimestampValue}, datetime('now')")
-        stringBuilder.appendLine("FROM ${tableName.schema().quoted()} as [base] WHERE NOT EXISTS")
+        stringBuilder.appendLine(
+            "FROM ${
+                tableName.schema().quoted()
+            } as [base] WHERE NOT EXISTS"
+        )
         stringBuilder.append("(SELECT ")
         stringBuilder.append(str3)
         stringBuilder.appendLine(" FROM ${trackingName.schema().quoted()} as [side] ")
         stringBuilder.appendLine("WHERE ${str4})")
 
-        return database.executeNonQuery(stringBuilder.toString())
+        return@SqliteQueryWrapper stringBuilder.toString()
+    }
+
+    override fun updateUntrackedRows(): Int =  sqliteUntrackedRowsQuery.executeStatement()
+
+    override fun close() {
+        initializeRowQuery.close()
+        initializeRowTrackingQuery.close()
+        sqliteRowQuery.close()
+        sqliteRowTrackingQuery.close()
+        sqliteMetadataQuery.close()
     }
 
     override fun getSelectInitializedChangesWithFilters(): Cursor =
@@ -616,7 +685,8 @@ class SqliteSyncAdapter(
             DbType.Binary ->
                 Base64.decode(value.toString(), Base64.NO_WRAP)
             DbType.DateTime ->
-                dateFormat.parse(value.toString().replace("T", " "))
+//                dateFormat.parse(value.toString().replace("T", " "))
+                value.toString().replace("T", " ")
             DbType.Guid ->
                 value.toString().uppercase()
             else -> value
@@ -645,94 +715,4 @@ class SqliteSyncAdapter(
             else -> value
         }
     }
-
-    private fun processSqlWithArgs(
-        query: String,
-        parameters: Map<String, Any?>
-    ): Pair<String, List<Any?>> {
-        val bindArgs = mutableListOf<Any?>()
-        var sql = query
-        do {
-            val startIndex = sql.indexOf("@")
-            if (startIndex >= 0) {
-                var index = startIndex + 1
-                while (index < sql.length && (sql[index].isLetterOrDigit() || sql[index] == '_'))
-                    ++index
-                index = min(index, sql.length)
-                val name = sql.substring(startIndex, index)
-                val value = parameters[name]
-                bindArgs.add(value)
-//                    sql =
-//                        "${
-//                            sql.substring(
-//                                0,
-//                                startIndex
-//                            )
-//                        }${value.asSqlValue()}${sql.substring(index)}"
-                sql = "${sql.substring(0, startIndex)}?${sql.substring(index)}"
-            }
-        } while (startIndex >= 0)
-
-        return Pair(sql, bindArgs)
-    }
-
-    private fun SQLiteDatabase.executeNonQuery(
-        query: String,
-        parameters: Map<String, Any?>? = null
-    ): Int {
-        if (parameters?.isNotEmpty() == true) {
-            val f = processSqlWithArgs(query, parameters)
-            this.compileStatement(f.first).apply {
-                var index = 1
-                f.second.forEach {
-                    when (it) {
-                        null, is Unit -> this.bindNull(index++)
-                        is String -> this.bindString(index++, it)
-                        is Byte -> this.bindLong(index++, it.toLong())
-                        is Int -> this.bindLong(index++, it.toLong())
-                        is Long -> this.bindLong(index++, it)
-                        is Boolean -> this.bindLong(index++, if (it) 1 else 0)
-                        is ByteArray -> this.bindBlob(index++, it)
-                        is Double -> this.bindDouble(index++, it)
-                        is Float -> this.bindDouble(index++, it.toDouble())
-                        is BigDecimal -> this.bindDouble(index++, it.toDouble())
-                        is UUID -> this.bindString(index++, it.toString().uppercase())
-                        is Date -> this.bindString(index++, dateFormat.format(it))
-                        else -> this.bindString(index++, it.toString())
-                    }
-                }
-                this.execute()
-            }
-        } else {
-            this.execSQL(query)
-        }
-
-        return this.rawQuery("SELECT changes()", null).use { cursor ->
-            if (cursor.moveToNext())
-                cursor.getInt(0)
-            else
-                0
-        }
-    }
 }
-
-//fun Any?.asSqlValue(): String {
-//    if (this == null)
-//        return "NULL"
-//
-//    return when (this) {
-//        is Boolean -> if (this) "1" else "0"
-//        is ByteArray -> "0x" + this
-//            .joinToString("") {
-//                val x = it.toString(16)
-//                if (x.length < 2)
-//                    "0$x"
-//                else
-//                    x
-//            }
-//            .uppercase(Locale.getDefault())
-//        is String -> "'${this}'"
-//        is UUID -> "'${this}'"
-//        else -> this.toString()
-//    }
-//}

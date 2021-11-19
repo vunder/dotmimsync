@@ -14,6 +14,7 @@ import kotlinx.serialization.json.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+@ExperimentalSerializationApi
 object PrimitiveSerializer : KSerializer<Any> {
     private const val dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
 
@@ -22,8 +23,7 @@ object PrimitiveSerializer : KSerializer<Any> {
     @SuppressLint("SimpleDateFormat")
     private val simpleDateFormat = SimpleDateFormat(dateFormat).apply { timeZone = gmtTimeZone }
 
-    @ExperimentalSerializationApi
-    @InternalSerializationApi
+    @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor =
         buildSerialDescriptor("PrimitiveSerializer", PolymorphicKind.SEALED)
 
