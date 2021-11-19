@@ -3,7 +3,6 @@ package com.mimetis.dotmim.sync.sqlite
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteStatement
-import com.mimetis.dotmim.sync.sqlite.helpers.processSql
 import java.io.Closeable
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
@@ -47,7 +46,7 @@ class SqliteQueryWrapper(
         ensureSqlQuery()
 
         if (statement == null) {
-            sql.processSql(parameters.keys.toList()).apply {
+            processSql(sql).apply {
                 statement = database.compileStatement(first)
                 order = second
             }
@@ -69,7 +68,7 @@ class SqliteQueryWrapper(
     fun executeCursor(parameters: Map<String, Any?> = emptyMap()): Cursor {
         ensureSqlQuery()
 
-        val result = sql.processSql(parameters.keys.toList())
+        val result = processSql(sql)
 
         return database.rawQuery(result.first, result.second.map { parameters[it]?.toString() }.toTypedArray())
     }
@@ -77,6 +76,32 @@ class SqliteQueryWrapper(
     private fun ensureSqlQuery() {
         if (sql.isBlank())
             sql = queryBuilder()
+    }
+
+    /**
+     * Process sql-query with named parameters to a query without named parameters to run it over
+     * SQLiteDatabase that does not support named parameters
+     * @param query Input sql-query with named parameters
+     * @return Transformed sql-query, parameters order to match values with unnamed parameters in the
+     * query
+     */
+    private fun processSql(query: String): Pair<String, List<String>> {
+        val bindOrder = mutableListOf<String>()
+        var sql = query
+        do {
+            val startIndex = sql.indexOf("@")
+            if (startIndex >= 0) {
+                var index = startIndex + 1
+                while (index < sql.length && (sql[index].isLetterOrDigit() || sql[index] == '_'))
+                    ++index
+                index = kotlin.math.min(index, sql.length)
+                val name = sql.substring(startIndex, index)
+                bindOrder.add(name)
+                sql = "${sql.substring(0, startIndex)}?${sql.substring(index)}"
+            }
+        } while (startIndex >= 0)
+
+        return Pair(sql, bindOrder)
     }
 
     private fun bindParameters(parameters: Map<String, Any?>) {
