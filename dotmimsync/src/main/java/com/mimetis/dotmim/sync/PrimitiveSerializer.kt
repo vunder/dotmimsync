@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync
 
 import android.annotation.SuppressLint
 import android.util.Base64
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PolymorphicKind
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+@ExperimentalSerializationApi
 object PrimitiveSerializer : KSerializer<Any> {
     private const val dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
 
