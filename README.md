@@ -1,6 +1,7 @@
 Dotmim.Sync for Android
 
 [![Release](https://jitpack.io/v/vunder/dotmimsync.svg)](https://jitpack.io/vunder/dotmimsync)
+[![](https://jitci.com/gh/vunder/dotmimsync/svg)](https://jitci.com/gh/vunder/dotmimsync)
 
 Android port for [Dotmim.Sync](https://github.com/Mimetis/Dotmim.Sync) C# library
 
