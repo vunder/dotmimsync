@@ -1,16 +1,15 @@
 package com.mimetis.dotmim.sync.sqlite
 
-import android.content.Context
 import android.database.sqlite.SQLiteOpenHelper
 import com.mimetis.dotmim.sync.CoreProvider
 import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.builders.*
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.io.Closeable
 
-class SqliteSyncProvider(context: Context, helper: SQLiteOpenHelper) : CoreProvider(),
-    Closeable {
+class SqliteSyncProvider(
+    helper: SQLiteOpenHelper
+) : CoreProvider() {
     private val database = helper.writableDatabase
     private lateinit var metadata: DbMetadata
     override val supportBulkOperations: Boolean
@@ -62,9 +61,5 @@ class SqliteSyncProvider(context: Context, helper: SQLiteOpenHelper) : CoreProvi
     companion object {
         val ProviderType: String
             get() = "SqliteSyncProvider, Dotmim.Sync.Sqlite.SqliteSyncProvider"
-    }
-
-    override fun close() {
-//        database.close()
     }
 }
