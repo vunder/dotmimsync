@@ -546,7 +546,7 @@ class SqliteSyncAdapter(
 
             pkeySelectForInsert.append("${comma}${columnName}")
             pkeyISelectForInsert.append("${comma}[i].${columnName}")
-            pkeyAliasSelectForInsert.append("{comma}@${parameterName} as $columnName")
+            pkeyAliasSelectForInsert.append("${comma}@${parameterName} as $columnName")
             pkeysLeftJoinForInsert.append("${and}[side].${columnName} = [i].${columnName}")
             pkeysIsNullForInsert.append("${and}[side].${columnName} IS NULL")
             and = " AND "
