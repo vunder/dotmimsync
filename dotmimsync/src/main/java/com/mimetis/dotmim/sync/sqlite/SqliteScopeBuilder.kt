@@ -2,6 +2,8 @@ package com.mimetis.dotmim.sync.sqlite
 
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import androidx.core.database.getStringOrNull
+import com.mimetis.dotmim.sync.SyncVersion
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -135,7 +137,7 @@ class SqliteScopeBuilder(
             setup = if (cursor.isNull(cursor.getColumnIndex("sync_scope_setup"))) null else json.decodeFromString<SyncSetup>(
                 cursor.getString(cursor.getColumnIndex("sync_scope_setup"))
             ),
-            version = cursor.getString(cursor.getColumnIndex("sync_scope_version")),
+            version = cursor.getStringOrNull(cursor.getColumnIndex("sync_scope_version")) ?: SyncVersion.current,
             lastSync = if (cursor.isNull(cursor.getColumnIndex("scope_last_sync"))) null else cursor.getLong(
                 cursor.getColumnIndex("scope_last_sync")
             ),
