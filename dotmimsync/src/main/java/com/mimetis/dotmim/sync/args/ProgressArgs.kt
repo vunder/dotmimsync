@@ -1,18 +1,23 @@
 package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 
 open class ProgressArgs(
-        /**
-         * Gets the current context
-         */
-        val context: SyncContext,
+    /**
+     * Gets the current context
+     */
+    val context: SyncContext
+) {
+    /**
+     * Gets the Progress level
+     */
+    open val progressLevel: SyncProgressLevel = SyncProgressLevel.Information
 
-        ) {
     /**
      * Gets or Sets an arbitrary args you can use for you own purpose
      */
-    val hint: String = ""
+    open val hint: String = ""
 
     /**
      * Gets the args type
@@ -45,5 +50,5 @@ open class ProgressArgs(
         get() = this.context.progressPercentage
 
     override fun toString(): String =
-            if (message.isNotBlank()) message else super.toString()
+        if (message.isNotBlank()) message else super.toString()
 }
