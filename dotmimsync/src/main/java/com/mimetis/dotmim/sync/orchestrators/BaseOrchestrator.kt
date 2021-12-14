@@ -332,7 +332,6 @@ abstract class BaseOrchestrator(
         if (migratingArgs.cancel)
             return context
 
-        /// TODO: Checking this code
         // Deprovision triggers stored procedures and tracking table if required
         migrationResults.tables.forEach { migrationTable ->
             // using a fake SyncTable based on oldSetup, since we don't need columns, but we need to have the filters
