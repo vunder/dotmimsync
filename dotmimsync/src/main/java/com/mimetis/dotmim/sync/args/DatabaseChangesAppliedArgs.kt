@@ -1,9 +1,9 @@
 package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.messages.DatabaseChangesApplied
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
-
 
 /**
  * Event args generated after changes applied
@@ -12,6 +12,9 @@ class DatabaseChangesAppliedArgs(
     context: SyncContext,
     val changesApplied: DatabaseChangesApplied
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel
+        get() = if (changesApplied.totalAppliedChanges > 0) SyncProgressLevel.Information else SyncProgressLevel.Debug
+
     override val message: String
         get() = "[Total] Applied:${changesApplied.totalAppliedChanges}. Conflicts:${changesApplied.totalResolvedConflicts}."
 
