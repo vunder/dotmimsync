@@ -298,15 +298,150 @@ abstract class BaseOrchestrator(
         return schema
     }
 
+    /**
+     * Migrate from a setup to another setup
+     */
     internal fun internalMigration(
         context: SyncContext,
         schema: SyncSet,
         oldSetup: SyncSetup,
-        newSetup: SyncSetup
-    ) {
-        // TODO: Migration not implemented
-        // TODO: BaseOrchestrator.Migration.cs:26
-//        throw NotImplementedError("Migration not implemented")
+        newSetup: SyncSetup,
+        progress: Progress<ProgressArgs>?
+    ): SyncContext {
+        // Create a new migration
+        val migration = Migration(newSetup, oldSetup)
+
+        // get comparision results
+        val migrationResults = migration.Compare()
+
+        // Launch InterceptAsync on Migrating
+        this.intercep(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
+
+        // Deprovision triggers stored procedures and tracking table if required
+        foreach (var migrationTable in migrationResults.tables)
+        {
+            // using a fake SyncTable based on oldSetup, since we don't need columns, but we need to have the filters
+            val schemaTable = SyncTable(migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName)
+
+            // Create a temporary SyncSet for attaching to the schemaTable
+            val tmpSchema = SyncSet()
+
+            // Add this table to schema
+            tmpSchema.tables.add(schemaTable)
+
+            tmpSchema.ensureSchema()
+
+            // copy filters from old setup
+            foreach (var filter in oldSetup.filters)
+                tmpSchema.filters.add(filter)
+
+            // using a fake Synctable, since we don't need columns to deprovision
+            val tableBuilder = this.getTableBuilder(schemaTable, oldSetup)
+
+            // Deprovision stored procedures
+            if (migrationTable.StoredProcedures == MigrationAction.Drop || migrationTable.StoredProcedures == MigrationAction.Create)
+                internalDropStoredProcedures(context, tableBuilder, progress)
+
+            // Deprovision triggers
+            if (migrationTable.Triggers == MigrationAction.Drop || migrationTable.Triggers == MigrationAction.Create)
+                internalDropTriggers(context, tableBuilder, progress)
+
+            // Deprovision tracking table
+            if (migrationTable.TrackingTable == MigrationAction.Drop || migrationTable.TrackingTable == MigrationAction.Create)
+            {
+                val exists = internalExistsTrackingTable(context, tableBuilder, progress)
+
+                if (exists)
+                    internalDropTrackingTable(context, oldSetup, tableBuilder, progress)
+            }
+
+            // Removing cached commands
+            var syncAdapter = this.getSyncAdapter(schemaTable, oldSetup)
+            syncAdapter.removeCommands()
+        }
+
+        // Provision table (create or alter), tracking tables, stored procedures and triggers
+        // Need the real SyncSet since we need columns definition
+        foreach (var migrationTable in migrationResults.tables)
+        {
+            val syncTable = schema.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
+            val oldTable = oldSetup.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
+
+            if (syncTable == null)
+                continue
+
+            var tableBuilder = this.getTableBuilder(syncTable, newSetup)
+
+            // Re provision table
+            if (migrationTable.table == MigrationAction.Create)
+            {
+                // Check if we need to create a schema there
+                val schemaExists = internalExistsSchema(context, tableBuilder, progress)
+
+                if (!schemaExists)
+                    internalCreateSchema(context, newSetup, tableBuilder, progress)
+
+                val exists = internalExistsTable(context, tableBuilder, progress)
+
+                if (!exists)
+                    internalCreateTable(context, newSetup, tableBuilder, progress)
+            }
+
+            // Re provision table
+            if (migrationTable.table == MigrationAction.Alter)
+            {
+                val exists = internalExistsTable(context, tableBuilder, progress)
+
+                if (!exists) {
+                    internalCreateTable(context, newSetup, tableBuilder, progress)
+                }
+                else if (oldTable != null) {
+                    //get new columns to add
+                    val newColumns = syncTable.columns.filter{ c -> !oldTable.Columns.any{ oldC -> string.Equals(oldC, c.ColumnName, SyncGlobalization.DataSourceStringComparison) } }
+
+                    if (newColumns != null)
+                    {
+                        foreach (var newColumn in newColumns)
+                        {
+                            var columnExist = internalExistsColumn(context, newColumn.ColumnName, tableBuilder, progress)
+                            if (!columnExist)
+                                internalAddColumn(context, newSetup, newColumn.ColumnName, tableBuilder, progress)
+                        }
+                    }
+                }
+            }
+
+            // Re provision tracking table
+            if (migrationTable.TrackingTable == MigrationAction.Rename && oldTable != null)
+            {
+                var (_, oldTableName) = this.provider.getParsers(SyncTable(oldTable.tableName, oldTable.schemaName), oldSetup)
+
+                internalRenameTrackingTable(context, newSetup, oldTableName, tableBuilder, progress)
+            }
+            else if (migrationTable.TrackingTable == MigrationAction.Create)
+            {
+                var exists = internalExistsTrackingTable(context, tableBuilder, progress)
+                if (exists)
+                    internalDropTrackingTable(context, newSetup, tableBuilder, progress)
+
+                internalCreateTrackingTable(context, newSetup, tableBuilder, progress)
+            }
+
+            // Re provision stored procedures
+            if (migrationTable.StoredProcedures == MigrationAction.Create)
+                internalCreateStoredProcedures(context, true, tableBuilder, progress)
+
+            // Re provision triggers
+            if (migrationTable.Triggers == MigrationAction.Create)
+                internalCreateTriggers(context, true, tableBuilder, progress)
+        }
+
+        // InterceptAsync Migrated
+        val args = MigratedArgs(context, schema, newSetup, migrationResults)
+        this.intercept(args)
+        this.reportProgress(context, progress, args)
+
+        return context
     }
 
     internal fun internalGetClientScope(
@@ -836,6 +971,9 @@ abstract class BaseOrchestrator(
         message: MessageApplyChanges,
         progress: Progress<ProgressArgs>?
     ): Pair<SyncContext, DatabaseChangesApplied> {
+        // call interceptor
+        this.intercept(DatabaseChangesApplyingArgs(context, message))
+
         val changesApplied = DatabaseChangesApplied()
 
         // Check if we have some data available
@@ -2085,7 +2223,7 @@ abstract class BaseOrchestrator(
 //        }
 
 //        if (provision.contains(SyncProvision.ServerHistoryScope)) {
-//            val exists = this.internalExistsScopeInfoTable(ctx, DbScopeType.ServerHistory, scopeBuilder, progress).ConfigureAwait(false);
+//            val exists = this.internalExistsScopeInfoTable(ctx, DbScopeType.ServerHistory, scopeBuilder, progress)
 //
 //            if (exists)
 //                this.internalDropScopeInfoTable(ctx, DbScopeType.ServerHistory, scopeBuilder, progress)
@@ -2132,12 +2270,12 @@ abstract class BaseOrchestrator(
         // Do not processing with because Sqlite does not support this
         return false
 
-//        val existsCommand = tableBuilder.getExistsStoredProcedureCommandAsync(storedProcedureType, filter, connection, transaction).ConfigureAwait(false);
+//        val existsCommand = tableBuilder.getExistsStoredProcedureCommandAsync(storedProcedureType, filter, connection, transaction)
 //
 //        if (existsCommand == null)
 //            return false
 //
-//        var existsResultObject = await existsCommand.ExecuteScalarAsync().ConfigureAwait(false);
+//        var existsResultObject = await existsCommand.ExecuteScalarAsync()
 //        var exists = Convert.ToInt32(existsResultObject) > 0;
 //
 //        return exists

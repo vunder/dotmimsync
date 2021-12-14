@@ -2,7 +2,10 @@
 # Changelog
 
 ## 1.0.2
-Match to MDS version 0.9.3. See [PR](https://github.com/Mimetis/Dotmim.Sync/pull/657)
+Match to MDS version 0.9.3. See [source PR](https://github.com/Mimetis/Dotmim.Sync/pull/657)
+* Added missing interceptors when deleting metadata (MetadataCleaningArgs/MetadataCleanedArgs) and getting local timestamp (LocalTimestampLoadingArgs/LocalTimestampLoadedArgs)
+* Triggering DatabaseChangesApplyingArgs
+* Added implementation for schema migration BaseOrchestrator.internalMigration()
 
 ## 1.0.1
 * Fixed error getting current version from database
