@@ -1,6 +1,7 @@
 package com.mimetis.dotmim.sync
 
 import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 
 class SyncOptions(
         /**
@@ -58,7 +59,12 @@ class SyncOptions(
         /**
          * Gets or Sets the default conflict resolution policy. This value could potentially be ovewritten and replaced by the server
          */
-        var conflictResolutionPolicy: ConflictResolutionPolicy = ConflictResolutionPolicy.ServerWins
+        var conflictResolutionPolicy: ConflictResolutionPolicy = ConflictResolutionPolicy.ServerWins,
+
+        /**
+         * Gets the Progress Level
+         */
+        var progressLevel: SyncProgressLevel = SyncProgressLevel.Information
 ) {
     companion object {
         /**
