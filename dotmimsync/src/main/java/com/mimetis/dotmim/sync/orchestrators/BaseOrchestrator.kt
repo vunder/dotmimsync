@@ -699,6 +699,21 @@ abstract class BaseOrchestrator(
     }
 
     /**
+     * Internal exists column procedure routine
+     */
+    internal fun internalExistsColumn(
+        ctx: SyncContext,
+        columnName: String
+        tableBuilder: DbTableBuilder,
+        progress: Progress<ProgressArgs>?
+    ): Boolean {
+        this.intercept(DbCommandArgs(ctx, "column exists"), progress)
+
+        val exists = tableBuilder.existsColumn(columnName);
+        return exists;
+    }
+
+    /**
      * Check then add primary keys to schema table
      */
     private fun setPrimaryKeys(schemaTable: SyncTable, tableBuilder: DbTableBuilder) {
@@ -863,8 +878,12 @@ abstract class BaseOrchestrator(
     ): Boolean =
         tableBuilder.existsTrackingTable()
 
-    private fun internalCreateTrackingTable(
+    /**
+     * Internal create tracking table routine
+     */
+    internal fun internalCreateTrackingTable(
         ctx: SyncContext,
+        setup: SyncSetup,
         tableBuilder: DbTableBuilder,
         progress: Progress<ProgressArgs>?
     ): Boolean {
@@ -874,7 +893,20 @@ abstract class BaseOrchestrator(
         if (tableBuilder.tableDescription.primaryKeys.isEmpty())
             throw  MissingPrimaryKeyException(tableBuilder.tableDescription.getFullName())
 
-        return tableBuilder.createTrackingTable()
+        val trackingTableName = this.provider.getParsers(tableBuilder.tableDescription, setup).second
+
+        val action = this.intercept(TrackingTableCreatingArgs(ctx, tableBuilder.tableDescription, trackingTableName),progress)
+
+        if (action.cancel)
+            return false
+
+        this.intercept(DbCommandArgs(ctx, "internalCreateTrackingTable"), progress)
+
+        tableBuilder.createTrackingTable()
+
+        var ttca = this.intercept(TrackingTableCreatedArgs(ctx, tableBuilder.tableDescription, trackingTableName), progress)
+
+        return true
     }
 
     private fun internalCreateTriggers(

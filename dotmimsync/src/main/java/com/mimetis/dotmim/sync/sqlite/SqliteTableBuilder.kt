@@ -826,6 +826,23 @@ class SqliteTableBuilder(
 
     override fun existsSchema(): Boolean = false
 
+    override fun existsColumn(columnName: String): Boolean {
+        database.rawQuery(
+            // may not work on old Android
+            //"SELECT * FROM pragma_table_info('${unquotedTableName}') where pk = 1;",
+            "pragma table_info('${tableName.unquoted()}');",
+            null
+        ).use { cursor ->
+            val index = cursor.getColumnIndex("name")
+            if (index < 0)
+                return false
+            while (cursor.moveToNext())
+                if (cursor.getString(index) == columnName)
+                    return true
+        }
+        return false
+    }
+
     init {
         initTriggerNames()
     }

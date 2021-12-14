@@ -47,4 +47,6 @@ abstract class DbTableBuilder(
 
     abstract fun createSchema()
     abstract fun existsSchema(): Boolean
+
+    abstract fun existsColumn(columnName: String): Boolean
 }
