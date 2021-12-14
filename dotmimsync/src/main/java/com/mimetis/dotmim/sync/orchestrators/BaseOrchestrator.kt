@@ -327,7 +327,10 @@ abstract class BaseOrchestrator(
         val migrationResults = migration.compare()
 
         // Launch InterceptAsync on Migrating
-        this.intercept(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
+        val migratingArgs = this.intercept(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
+        // New logic to be able to cancel any migration
+        if (migratingArgs.cancel)
+            return context
 
         /// TODO: Checking this code
         // Deprovision triggers stored procedures and tracking table if required
@@ -703,7 +706,7 @@ abstract class BaseOrchestrator(
      */
     internal fun internalExistsColumn(
         ctx: SyncContext,
-        columnName: String
+        columnName: String,
         tableBuilder: DbTableBuilder,
         progress: Progress<ProgressArgs>?
     ): Boolean {
