@@ -912,6 +912,38 @@ abstract class BaseOrchestrator(
         return true
     }
 
+    /**
+     * Internal rename tracking table routine
+     */
+    internal fun internalRenameTrackingTable(
+        ctx: SyncContext,
+        setup: SyncSetup,
+        oldTrackingTableName: ParserName,
+        tableBuilder: DbTableBuilder,
+        progress: Progress<ProgressArgs>?
+    ): Boolean {
+        if (tableBuilder.tableDescription.columns.size <= 0)
+            throw MissingsColumnException(tableBuilder.tableDescription.getFullName())
+
+        if (tableBuilder.tableDescription.primaryKeys.size <= 0)
+            throw MissingPrimaryKeyException(tableBuilder.tableDescription.getFullName())
+
+        val trackingTableName = this.provider.getParsers(tableBuilder.tableDescription, setup).second
+
+        val action = this.intercept(TrackingTableRenamingArgs(ctx, tableBuilder.tableDescription, trackingTableName, oldTrackingTableName), progress)
+
+        if (action.cancel)
+            return false
+
+        this.intercept(DbCommandArgs(ctx, "internalRenameTrackingTable"), progress)
+
+        tableBuilder.renameTrackingTable(oldTrackingTableName)
+
+        this.intercept(TrackingTableRenamedArgs(ctx, tableBuilder.tableDescription, trackingTableName, oldTrackingTableName), progress)
+
+        return true
+    }
+
     private fun internalCreateTriggers(
         ctx: SyncContext,
         overwrite: Boolean,

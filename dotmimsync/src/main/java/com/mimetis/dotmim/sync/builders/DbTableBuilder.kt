@@ -50,4 +50,6 @@ abstract class DbTableBuilder(
 
     abstract fun addColumn(columnName: String)
     abstract fun existsColumn(columnName: String): Boolean
+
+    abstract fun renameTrackingTable(oldTableName: ParserName)
 }

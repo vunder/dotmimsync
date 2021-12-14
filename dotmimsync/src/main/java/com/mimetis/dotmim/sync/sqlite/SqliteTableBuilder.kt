@@ -892,6 +892,13 @@ class SqliteTableBuilder(
         return false
     }
 
+    override fun renameTrackingTable(oldTableName: ParserName) {
+        val tableNameString = this.trackingTableName.quoted().toString()
+        val oldTableNameString = oldTableName.quoted().toString()
+
+        database.execSQL("ALTER TABLE $oldTableNameString RENAME TO $tableNameString;")
+    }
+
     init {
         initTriggerNames()
     }
