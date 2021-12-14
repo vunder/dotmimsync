@@ -734,8 +734,18 @@ abstract class BaseOrchestrator(
     }
 
     internal fun internalGetLocalTimestamp(): Long {
+        var args = LocalTimestampLoadingArgs(context)
+        this.intercept(args)
+        if (args.cancel)
+            return 0l;
+
         val scopeBuilder = getScopeBuilder(this.options.scopeInfoTableName)
-        return scopeBuilder.getLocalTimestamp()
+        var result = scopeBuilder.getLocalTimestamp()
+
+        var loadedArgs = LocalTimestampLoadedArgs(context, result)
+        this.intercept(args)
+
+        return loadedArgs.localTimestamp
     }
 
     /**
@@ -1688,14 +1698,11 @@ abstract class BaseOrchestrator(
         return metadataUpdatedRowsCount > 0
     }
 
-    /**
-     * Get the rows count cleaned for all tables, during a DeleteMetadatasAsync call
-     */
     internal fun internalDeleteMetadatas(
         context: SyncContext, schema: SyncSet, setup: SyncSetup,
         timestampLimit: Long, progress: Progress<ProgressArgs>?
     ): DatabaseMetadatasCleaned {
-//        this.intercept(MetadataCleaningArgs(context, this.Setup, timestampLimit, connection, transaction), cancellationToken).ConfigureAwait(false);
+        this.intercept(MetadataCleaningArgs(context, this.setup, timestampLimit))
 
         val databaseMetadatasCleaned = DatabaseMetadatasCleaned(timestampLimit = timestampLimit)
 
@@ -1719,7 +1726,7 @@ abstract class BaseOrchestrator(
 
         }
 
-//        this.intercept(MetadataCleanedArgs(context, databaseMetadatasCleaned, connection), cancellationToken).ConfigureAwait(false);
+       this.intercept(MetadataCleanedArgs(context, databaseMetadatasCleaned))
         return databaseMetadatasCleaned
     }
 

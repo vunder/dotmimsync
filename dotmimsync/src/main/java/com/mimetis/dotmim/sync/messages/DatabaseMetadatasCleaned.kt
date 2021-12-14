@@ -4,6 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
+/**
+ * Get the rows count cleaned for all tables, during a DeleteMetadatasAsync call
+ */
 @Serializable
 class DatabaseMetadatasCleaned(
         /**
