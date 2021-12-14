@@ -41,3 +41,5 @@ Here is a version match table. Left column represent current library, right colu
 |Library version|Dotmim.Sync version|
 |-|-|
 |1.0|0.9.1 or lower|
+|1.0.1|0.9.1 or lower|
+|1.0.2|0.9.3 or lower|
