@@ -44,4 +44,7 @@ abstract class DbTableBuilder(
 
     abstract fun dropTrackingTable()
     abstract fun dropTable()
+
+    abstract fun createSchema()
+    abstract fun existsSchema(): Boolean
 }

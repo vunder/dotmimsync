@@ -822,6 +822,10 @@ class SqliteTableBuilder(
         database.execSQL(createTrigger.toString())
     }
 
+    override fun createSchema() {}
+
+    override fun existsSchema(): Boolean = false
+
     init {
         initTriggerNames()
     }
