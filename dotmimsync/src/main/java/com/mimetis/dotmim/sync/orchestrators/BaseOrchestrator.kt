@@ -869,15 +869,15 @@ abstract class BaseOrchestrator(
     }
 
     internal fun internalGetLocalTimestamp(): Long {
-        var args = LocalTimestampLoadingArgs(context)
+        val args = LocalTimestampLoadingArgs(this.getContext())
         this.intercept(args)
         if (args.cancel)
-            return 0l;
+            return 0L
 
         val scopeBuilder = getScopeBuilder(this.options.scopeInfoTableName)
-        var result = scopeBuilder.getLocalTimestamp()
+        val result = scopeBuilder.getLocalTimestamp()
 
-        var loadedArgs = LocalTimestampLoadedArgs(context, result)
+        val loadedArgs = LocalTimestampLoadedArgs(this.getContext(), result)
         this.intercept(args)
 
         return loadedArgs.localTimestamp
