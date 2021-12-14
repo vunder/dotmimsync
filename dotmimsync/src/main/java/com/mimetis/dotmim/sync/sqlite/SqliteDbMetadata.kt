@@ -32,13 +32,23 @@ class SqliteDbMetadata : DbMetadata() {
         }
     }
 
-    override fun validateMaxLength(typeName: String, isUnsigned: Boolean, isUnicode: Boolean, maxLength: Int): Int =
-            if (maxLength > Int.MAX_VALUE)
-                Int.MAX_VALUE
-            else
-                maxLength
+    override fun validateMaxLength(
+        typeName: String,
+        isUnsigned: Boolean,
+        isUnicode: Boolean,
+        maxLength: Int
+    ): Int =
+        if (maxLength > Int.MAX_VALUE)
+            Int.MAX_VALUE
+        else
+            maxLength
 
-    override fun validateOwnerDbType(typeName: String, isUnsigned: Boolean, isUnicode: Boolean, maxLength: Int): Any {
+    override fun validateOwnerDbType(
+        typeName: String,
+        isUnsigned: Boolean,
+        isUnicode: Boolean,
+        maxLength: Int
+    ): Any {
         var tn = typeName
         if (tn.contains("("))
             tn = tn.substring(0, typeName.indexOf("("))
@@ -81,7 +91,12 @@ class SqliteDbMetadata : DbMetadata() {
         }
     }
 
-    override fun validateDbType(typeName: String, isUnsigned: Boolean, isUnicode: Boolean, maxLength: Int): DbType {
+    override fun validateDbType(
+        typeName: String,
+        isUnsigned: Boolean,
+        isUnicode: Boolean,
+        maxLength: Int
+    ): DbType {
         var tn = typeName
         if (tn.contains("("))
             tn = tn.substring(0, typeName.indexOf("("))
@@ -113,7 +128,7 @@ class SqliteDbMetadata : DbMetadata() {
     }
 
     override fun validateIsReadonly(columnDefinition: SyncColumn): Boolean =
-            false
+        false
 
     override fun isNumericType(typeName: String): Boolean {
         var tn = typeName.lowercase(Locale.getDefault())
@@ -136,8 +151,41 @@ class SqliteDbMetadata : DbMetadata() {
     }
 
     override fun validatePrecisionAndScale(columnDefinition: SyncColumn): Pair<Byte, Byte> =
-            Pair(columnDefinition.precision, columnDefinition.scale)
+        Pair(columnDefinition.precision, columnDefinition.scale)
 
     override fun validatePrecision(columnDefinition: SyncColumn): Byte =
-            columnDefinition.precision
+        columnDefinition.precision
+
+    fun getOwnerDbTypeFromDbType(columnDefinition: SyncColumn): SqliteType =
+        when (columnDefinition.getDbType()) {
+            DbType.AnsiString, DbType.AnsiStringFixedLength, DbType.String, DbType.StringFixedLength, DbType.Xml,
+            DbType.Time, DbType.DateTimeOffset, DbType.Guid, DbType.Date, DbType.DateTime, DbType.DateTime2 -> SqliteType.Text
+            DbType.Binary, DbType.Object -> SqliteType.Blob
+            DbType.Boolean, DbType.Byte, DbType.Int16, DbType.Int32, DbType.UInt16, DbType.Int64, DbType.UInt32,
+            DbType.UInt64, DbType.SByte -> SqliteType.Integer
+            DbType.Decimal, DbType.Double, DbType.Single, DbType.Currency, DbType.VarNumeric -> SqliteType.Real
+            else -> throw  Exception("In Column ${columnDefinition.columnName}, the type ${columnDefinition.getDbType()} is not supported")
+        }
+
+    /**
+     * Gets a compatible column definition
+     */
+    fun getCompatibleColumnTypeDeclarationString(
+        column: SyncColumn,
+        fromProviderType: String
+    ): String {
+        if (fromProviderType == SqliteSyncProvider.ProviderType)
+            return column.originalTypeName
+
+        // Fallback on my sql db type extract from simple db type
+        val sqliteType = this.getOwnerDbTypeFromDbType(column)
+
+        return when (sqliteType) {
+            SqliteType.Integer -> "integer"
+            SqliteType.Real -> "numeric"
+            SqliteType.Text -> "text"
+            SqliteType.Blob -> "blob"
+            else -> throw Exception("In Column ${column.columnName}, the type ${column.getDbType()} is not supported")
+        }
+    }
 }

@@ -171,7 +171,7 @@ abstract class BaseOrchestrator(
                     this.internalExistsTrackingTable(ctx, tableBuilder, progress)
 
                 if (!trackingTableExistst)
-                    this.internalCreateTrackingTable(ctx, tableBuilder, progress)
+                    this.internalCreateTrackingTable(ctx, setup, tableBuilder, progress)
             }
 
             if (provision.contains(SyncProvision.Triggers))
@@ -2547,6 +2547,41 @@ abstract class BaseOrchestrator(
         }
 
         return hasDroppedAtLeastOneStoredProcedure
+    }
+
+    /**
+     * Internal add column routine
+     */
+    internal fun internalAddColumn(
+        ctx: SyncContext,
+        setup: SyncSetup,
+        addedColumnName: String,
+        tableBuilder: DbTableBuilder,
+        progress: Progress<ProgressArgs>?
+
+    ): Boolean {
+        if (tableBuilder.tableDescription.columns.size <= 0)
+            throw MissingsColumnException(tableBuilder.tableDescription.getFullName())
+
+        if (tableBuilder.tableDescription.primaryKeys.size <= 0)
+            throw MissingPrimaryKeyException(tableBuilder.tableDescription.getFullName())
+
+        val tableName = this.provider.getParsers(tableBuilder.tableDescription, setup).first
+
+        val action = ColumnCreatingArgs(ctx, addedColumnName, tableBuilder.tableDescription, tableName)
+
+        this.intercept(action, progress)
+
+        if (action.cancel)
+            return false
+
+        this.intercept(DbCommandArgs(ctx, "internalAddColumn"), progress)
+
+        tableBuilder.addColumn(addedColumnName)
+
+        this.intercept(ColumnCreatedArgs(ctx, addedColumnName, tableBuilder.tableDescription, tableName), progress)
+
+        return true
     }
 
     companion object {

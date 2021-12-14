@@ -12,6 +12,8 @@ class ColumnCreatingArgs(
     val table: SyncTable,
     val tableName: ParserName
 ) : ProgressArgs(context) {
+    var cancel: Boolean = false
+
     override val progressLevel: SyncProgressLevel
         get() = SyncProgressLevel.Trace
 

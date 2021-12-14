@@ -76,7 +76,8 @@ class SqliteTableBuilder(
             "pragma table_info('${unquotedTableName}');",
             null
         ).use { cursor ->
-            keys.load(cursor) { c -> c.getInt(c.getColumnIndex("pk")) == 1 }
+            val pkIndex = cursor.getColumnIndex("pk")
+            keys.load(cursor) { c -> c.getInt(pkIndex) == 1 }
         }
 
         val lstKeys = ArrayList<SyncColumn>()
@@ -825,6 +826,54 @@ class SqliteTableBuilder(
     override fun createSchema() {}
 
     override fun existsSchema(): Boolean = false
+
+    override fun addColumn(columnName: String) {
+        val stringBuilder = StringBuilder("ALTER TABLE ${this.tableName.quoted()} ADD COLUMN")
+
+        val column = this.tableDescription.columns!![columnName]!!
+        val columnNameString = ParserName.parse(column).quoted().toString()
+
+        val sqliteDbMetadata = SqliteDbMetadata()
+        val columnType = sqliteDbMetadata.getCompatibleColumnTypeDeclarationString(column, tableDescription.originalProvider ?: "")
+
+        // check case
+        var casesensitive = ""
+        if (this.isTextType(column.getDbType()))
+        {
+            casesensitive = "COLLATE NOCASE"//SyncGlobalization.IsCaseSensitive() ? "" : "COLLATE NOCASE";
+
+            //check if it's a primary key, then, even if it's case sensitive, we turn on case insensitive
+//            if (SyncGlobalization.IsCaseSensitive())
+//            {
+//                if (this.TableDescription.PrimaryKeys.Contains(column.ColumnName))
+//                    casesensitive = "COLLATE NOCASE";
+//            }
+        }
+
+        var identity = ""
+
+        if (column.isAutoIncrement) {
+            val step_seed = column.getAutoIncrementSeedAndStep()
+            if (step_seed.first > 1 || step_seed.second > 1)
+                throw UnsupportedOperationException("can't establish a seed / step in Sqlite autoinc value")
+
+            //identity = $"AUTOINCREMENT";
+            // Actually no need to set AutoIncrement, if we insert a null value
+            identity = ""
+        }
+        var nullString = if (column.allowDBNull) "NULL" else "NOT NULL"
+
+        // if auto inc, don't specify NOT NULL option, since we need to insert a null value to make it auto inc.
+        if (column.isAutoIncrement)
+            nullString = ""
+        // if it's a readonly column, it could be a computed column, so we need to allow null
+        else if (column.isReadOnly)
+            nullString = "NULL"
+
+        stringBuilder.appendLine(" $columnNameString $columnType $identity $nullString ${casesensitive};")
+
+        database.execSQL(stringBuilder.toString())
+    }
 
     override fun existsColumn(columnName: String): Boolean {
         database.rawQuery(
