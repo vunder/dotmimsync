@@ -13,6 +13,8 @@ import com.mimetis.dotmim.sync.parameter.SyncParameters
 import com.mimetis.dotmim.sync.scopes.ScopeInfo
 import com.mimetis.dotmim.sync.scopes.ServerScopeInfo
 import com.mimetis.dotmim.sync.set.*
+import com.mimetis.dotmim.sync.setup.Migration
+import com.mimetis.dotmim.sync.setup.MigrationAction
 import com.mimetis.dotmim.sync.setup.SetupTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import com.mimetis.dotmim.sync.sqlite.CursorHelper.getValue
@@ -312,129 +314,124 @@ abstract class BaseOrchestrator(
         val migration = Migration(newSetup, oldSetup)
 
         // get comparision results
-        val migrationResults = migration.Compare()
+        val migrationResults = migration.compare()
 
         // Launch InterceptAsync on Migrating
-        this.intercep(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
+        this.intercept(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
 
-        // Deprovision triggers stored procedures and tracking table if required
-        foreach (var migrationTable in migrationResults.tables)
-        {
-            // using a fake SyncTable based on oldSetup, since we don't need columns, but we need to have the filters
-            val schemaTable = SyncTable(migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName)
-
-            // Create a temporary SyncSet for attaching to the schemaTable
-            val tmpSchema = SyncSet()
-
-            // Add this table to schema
-            tmpSchema.tables.add(schemaTable)
-
-            tmpSchema.ensureSchema()
-
-            // copy filters from old setup
-            foreach (var filter in oldSetup.filters)
-                tmpSchema.filters.add(filter)
-
-            // using a fake Synctable, since we don't need columns to deprovision
-            val tableBuilder = this.getTableBuilder(schemaTable, oldSetup)
-
-            // Deprovision stored procedures
-            if (migrationTable.StoredProcedures == MigrationAction.Drop || migrationTable.StoredProcedures == MigrationAction.Create)
-                internalDropStoredProcedures(context, tableBuilder, progress)
-
-            // Deprovision triggers
-            if (migrationTable.Triggers == MigrationAction.Drop || migrationTable.Triggers == MigrationAction.Create)
-                internalDropTriggers(context, tableBuilder, progress)
-
-            // Deprovision tracking table
-            if (migrationTable.TrackingTable == MigrationAction.Drop || migrationTable.TrackingTable == MigrationAction.Create)
-            {
-                val exists = internalExistsTrackingTable(context, tableBuilder, progress)
-
-                if (exists)
-                    internalDropTrackingTable(context, oldSetup, tableBuilder, progress)
-            }
-
-            // Removing cached commands
-            var syncAdapter = this.getSyncAdapter(schemaTable, oldSetup)
-            syncAdapter.removeCommands()
-        }
-
-        // Provision table (create or alter), tracking tables, stored procedures and triggers
-        // Need the real SyncSet since we need columns definition
-        foreach (var migrationTable in migrationResults.tables)
-        {
-            val syncTable = schema.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
-            val oldTable = oldSetup.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
-
-            if (syncTable == null)
-                continue
-
-            var tableBuilder = this.getTableBuilder(syncTable, newSetup)
-
-            // Re provision table
-            if (migrationTable.table == MigrationAction.Create)
-            {
-                // Check if we need to create a schema there
-                val schemaExists = internalExistsSchema(context, tableBuilder, progress)
-
-                if (!schemaExists)
-                    internalCreateSchema(context, newSetup, tableBuilder, progress)
-
-                val exists = internalExistsTable(context, tableBuilder, progress)
-
-                if (!exists)
-                    internalCreateTable(context, newSetup, tableBuilder, progress)
-            }
-
-            // Re provision table
-            if (migrationTable.table == MigrationAction.Alter)
-            {
-                val exists = internalExistsTable(context, tableBuilder, progress)
-
-                if (!exists) {
-                    internalCreateTable(context, newSetup, tableBuilder, progress)
-                }
-                else if (oldTable != null) {
-                    //get new columns to add
-                    val newColumns = syncTable.columns.filter{ c -> !oldTable.Columns.any{ oldC -> string.Equals(oldC, c.ColumnName, SyncGlobalization.DataSourceStringComparison) } }
-
-                    if (newColumns != null)
-                    {
-                        foreach (var newColumn in newColumns)
-                        {
-                            var columnExist = internalExistsColumn(context, newColumn.ColumnName, tableBuilder, progress)
-                            if (!columnExist)
-                                internalAddColumn(context, newSetup, newColumn.ColumnName, tableBuilder, progress)
-                        }
-                    }
-                }
-            }
-
-            // Re provision tracking table
-            if (migrationTable.TrackingTable == MigrationAction.Rename && oldTable != null)
-            {
-                var (_, oldTableName) = this.provider.getParsers(SyncTable(oldTable.tableName, oldTable.schemaName), oldSetup)
-
-                internalRenameTrackingTable(context, newSetup, oldTableName, tableBuilder, progress)
-            }
-            else if (migrationTable.TrackingTable == MigrationAction.Create)
-            {
-                var exists = internalExistsTrackingTable(context, tableBuilder, progress)
-                if (exists)
-                    internalDropTrackingTable(context, newSetup, tableBuilder, progress)
-
-                internalCreateTrackingTable(context, newSetup, tableBuilder, progress)
-            }
-
-            // Re provision stored procedures
-            if (migrationTable.StoredProcedures == MigrationAction.Create)
-                internalCreateStoredProcedures(context, true, tableBuilder, progress)
-
-            // Re provision triggers
-            if (migrationTable.Triggers == MigrationAction.Create)
-                internalCreateTriggers(context, true, tableBuilder, progress)
-        }
+        /// TODO: Checking this code
+//        // Deprovision triggers stored procedures and tracking table if required
+//        migrationResults.tables.forEach { migrationTable ->
+//            // using a fake SyncTable based on oldSetup, since we don't need columns, but we need to have the filters
+//            val schemaTable = SyncTable(migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName)
+//
+//            // Create a temporary SyncSet for attaching to the schemaTable
+//            val tmpSchema = SyncSet()
+//
+//            // Add this table to schema
+//            tmpSchema.tables.add(schemaTable)
+//
+//            tmpSchema.ensureSchema()
+//
+//            // copy filters from old setup
+//            oldSetup.filters.forEach { filter -> tmpSchema.filters.add(filter) }
+//
+//            // using a fake Synctable, since we don't need columns to deprovision
+//            val tableBuilder = this.getTableBuilder(schemaTable, oldSetup)
+//
+//            // Deprovision stored procedures
+//            if (migrationTable.storedProcedures == MigrationAction.Drop || migrationTable.storedProcedures == MigrationAction.Create)
+//                internalDropStoredProcedures(context, tableBuilder, progress)
+//
+//            // Deprovision triggers
+//            if (migrationTable.triggers == MigrationAction.Drop || migrationTable.triggers == MigrationAction.Create)
+//                internalDropTriggers(context, tableBuilder, progress)
+//
+//            // Deprovision tracking table
+//            if (migrationTable.trackingTable == MigrationAction.Drop || migrationTable.trackingTable == MigrationAction.Create)
+//            {
+//                val exists = internalExistsTrackingTable(context, tableBuilder, progress)
+//
+//                if (exists)
+//                    internalDropTrackingTable(context, oldSetup, tableBuilder, progress)
+//            }
+//
+//            // Removing cached commands
+//            val syncAdapter = this.getSyncAdapter(schemaTable, oldSetup)
+//            syncAdapter.removeCommands()
+//        }
+//
+//        // Provision table (create or alter), tracking tables, stored procedures and triggers
+//        // Need the real SyncSet since we need columns definition
+//        migrationResults.tables.forEach { migrationTable ->
+//            val syncTable = schema.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
+//            val oldTable = oldSetup.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
+//
+//            if (syncTable == null)
+//                return@forEach
+//
+//            val tableBuilder = this.getTableBuilder(syncTable, newSetup)
+//
+//            // Re provision table
+//            if (migrationTable.table == MigrationAction.Create)
+//            {
+//                // Check if we need to create a schema there
+//                val schemaExists = internalExistsSchema(context, tableBuilder, progress)
+//
+//                if (!schemaExists)
+//                    internalCreateSchema(context, newSetup, tableBuilder, progress)
+//
+//                val exists = internalExistsTable(context, tableBuilder, progress)
+//
+//                if (!exists)
+//                    internalCreateTable(context, newSetup, tableBuilder, progress)
+//            }
+//
+//            // Re provision table
+//            if (migrationTable.table == MigrationAction.Alter)
+//            {
+//                val exists = internalExistsTable(context, tableBuilder, progress)
+//
+//                if (!exists) {
+//                    internalCreateTable(context, newSetup, tableBuilder, progress)
+//                }
+//                else if (oldTable != null) {
+//                    //get new columns to add
+//                    val newColumns = syncTable.columns.filter{ c -> !oldTable.columns.any{ oldC -> oldC.equals(c.columnName, true) } }
+//
+//                    if (newColumns != null) {
+//                        newColumns.forEach { newColumn ->
+//                            val columnExist = internalExistsColumn(context, newColumn.columnName, tableBuilder, progress)
+//                            if (!columnExist)
+//                                internalAddColumn(context, newSetup, newColumn.columnName, tableBuilder, progress)
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // Re provision tracking table
+//            if (migrationTable.trackingTable == MigrationAction.Rename && oldTable != null) {
+//                val (_, oldTableName) = this.provider.getParsers(SyncTable(oldTable.tableName, oldTable.schemaName), oldSetup)
+//
+//                internalRenameTrackingTable(context, newSetup, oldTableName, tableBuilder, progress)
+//            }
+//            else if (migrationTable.trackingTable == MigrationAction.Create)
+//            {
+//                val exists = internalExistsTrackingTable(context, tableBuilder, progress)
+//                if (exists)
+//                    internalDropTrackingTable(context, newSetup, tableBuilder, progress)
+//
+//                internalCreateTrackingTable(context, newSetup, tableBuilder, progress)
+//            }
+//
+//            // Re provision stored procedures
+//            if (migrationTable.storedProcedures == MigrationAction.Create)
+//                internalCreateStoredProcedures(context, true, tableBuilder, progress)
+//
+//            // Re provision triggers
+//            if (migrationTable.triggers == MigrationAction.Create)
+//                internalCreateTriggers(context, true, tableBuilder, progress)
+//        }
 
         // InterceptAsync Migrated
         val args = MigratedArgs(context, schema, newSetup, migrationResults)
