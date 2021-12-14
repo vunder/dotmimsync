@@ -137,6 +137,10 @@ class SqliteSyncAdapter(
         return getSelectRowQuery.executeCursor(parameters)
     }
 
+    override fun removeCommands() {
+//        TODO("Not yet implemented")
+    }
+
     override fun enableConstraints() =
         database.execSQL("Select 0")
 

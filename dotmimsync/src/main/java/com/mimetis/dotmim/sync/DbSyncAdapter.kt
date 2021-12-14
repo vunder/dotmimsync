@@ -17,6 +17,7 @@ abstract class DbSyncAdapter(
     abstract fun getSelectChangesWithFilters(lastTimestamp: Long?): Cursor
     abstract fun getSelectChanges(lastTimestamp: Long?): Cursor
     abstract fun getSelectRow(primaryKeyRow: SyncRow): Cursor
+    abstract fun removeCommands()
 
     abstract fun enableConstraints()
     abstract fun disableConstraints()
