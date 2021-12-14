@@ -1,6 +1,8 @@
 package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
+import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncTable
 
 /**
@@ -10,6 +12,9 @@ class TableChangesSelectingArgs(
     context: SyncContext,
     schemaTable: SyncTable
 ):ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel
+        get() = SyncProgressLevel.Debug
+
     override val message: String
         get() = "Getting Changes [${table.getFullName()}]."
 
@@ -23,3 +28,9 @@ class TableChangesSelectingArgs(
 
     var cancel: Boolean = false
 }
+
+/**
+ * Intercept the provider action when changes are going to be selected on each table defined in the configuration schema
+ */
+fun BaseOrchestrator.onTableChangesSelecting(action: (TableChangesSelectingArgs) -> Unit) =
+    this.setInterceptor(action)

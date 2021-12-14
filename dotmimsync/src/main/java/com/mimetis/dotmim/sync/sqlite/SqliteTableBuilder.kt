@@ -1,12 +1,14 @@
 package com.mimetis.dotmim.sync.sqlite
 
 import android.database.sqlite.SQLiteDatabase
+import com.mimetis.dotmim.sync.builders.DbStoredProcedureType
 import com.mimetis.dotmim.sync.builders.DbTableBuilder
 import com.mimetis.dotmim.sync.builders.DbTriggerType
 import com.mimetis.dotmim.sync.builders.ParserName
 import com.mimetis.dotmim.sync.manager.DbRelationColumnDefinition
 import com.mimetis.dotmim.sync.manager.DbRelationDefinition
 import com.mimetis.dotmim.sync.set.SyncColumn
+import com.mimetis.dotmim.sync.set.SyncFilter
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.DbType
 import com.mimetis.dotmim.sync.setup.SyncSetup
@@ -834,13 +836,16 @@ class SqliteTableBuilder(
         val columnNameString = ParserName.parse(column).quoted().toString()
 
         val sqliteDbMetadata = SqliteDbMetadata()
-        val columnType = sqliteDbMetadata.getCompatibleColumnTypeDeclarationString(column, tableDescription.originalProvider ?: "")
+        val columnType = sqliteDbMetadata.getCompatibleColumnTypeDeclarationString(
+            column,
+            tableDescription.originalProvider ?: ""
+        )
 
         // check case
         var casesensitive = ""
-        if (this.isTextType(column.getDbType()))
-        {
-            casesensitive = "COLLATE NOCASE"//SyncGlobalization.IsCaseSensitive() ? "" : "COLLATE NOCASE";
+        if (this.isTextType(column.getDbType())) {
+            casesensitive =
+                "COLLATE NOCASE"//SyncGlobalization.IsCaseSensitive() ? "" : "COLLATE NOCASE";
 
             //check if it's a primary key, then, even if it's case sensitive, we turn on case insensitive
 //            if (SyncGlobalization.IsCaseSensitive())
@@ -897,6 +902,12 @@ class SqliteTableBuilder(
         val oldTableNameString = oldTableName.quoted().toString()
 
         database.execSQL("ALTER TABLE $oldTableNameString RENAME TO $tableNameString;")
+    }
+
+    override fun createStoredProcedure(
+        storedProcedureType: DbStoredProcedureType,
+        filter: SyncFilter?
+    ) {
     }
 
     init {

@@ -410,7 +410,7 @@ abstract class BaseOrchestrator(
                 }
                 else if (oldTable != null) {
                     //get new columns to add
-                    val newColumns = syncTable.columns.filter{ c -> !oldTable.columns.any{ oldC -> oldC.equals(c.columnName, true) } }
+                    val newColumns = syncTable.columns!!.filter{ c -> !oldTable.columns.any{ oldC -> oldC.equals(c.columnName, true) } }
 
                     if (newColumns != null) {
                         newColumns.forEach { newColumn ->
@@ -922,7 +922,7 @@ abstract class BaseOrchestrator(
         tableBuilder: DbTableBuilder,
         progress: Progress<ProgressArgs>?
     ): Boolean {
-        if (tableBuilder.tableDescription.columns.size <= 0)
+        if (tableBuilder.tableDescription.columns!!.size <= 0)
             throw MissingsColumnException(tableBuilder.tableDescription.getFullName())
 
         if (tableBuilder.tableDescription.primaryKeys.size <= 0)
@@ -2585,6 +2585,92 @@ abstract class BaseOrchestrator(
     }
 
     /**
+     * Internal create Stored Procedure routine
+     */
+    internal fun internalCreateStoredProcedure(
+        ctx: SyncContext,
+        tableBuilder: DbTableBuilder,
+        storedProcedureType: DbStoredProcedureType,
+        progress: Progress<ProgressArgs>?
+    ): Boolean {
+        if (tableBuilder.tableDescription.columns!!.size <= 0)
+            throw MissingsColumnException(tableBuilder.tableDescription.getFullName())
+
+        if (tableBuilder.tableDescription.primaryKeys.size <= 0)
+            throw MissingPrimaryKeyException(tableBuilder.tableDescription.getFullName())
+
+        val filter = tableBuilder.tableDescription.getFilter()
+
+        val action = StoredProcedureCreatingArgs(ctx, tableBuilder.tableDescription, storedProcedureType)
+        this.intercept(action, progress)
+
+        if (action.cancel)
+            return false
+
+        this.intercept(DbCommandArgs(ctx, "internalCreateStoredProcedure"), progress)
+
+        tableBuilder.createStoredProcedure(storedProcedureType, filter)
+        this.intercept(StoredProcedureCreatedArgs(ctx, tableBuilder.tableDescription, storedProcedureType), progress)
+
+        return true
+    }
+
+    /**
+     * Internal create storedProcedures routine
+     */
+    internal fun internalCreateStoredProcedures(
+        ctx: SyncContext,
+        overwrite: Boolean,
+        tableBuilder: DbTableBuilder,
+        progress: Progress<ProgressArgs>?
+    ): Boolean {
+        var hasCreatedAtLeastOneStoredProcedure = false
+
+        // Order Asc is the correct order to Delete
+        var listStoredProcedureType = DbStoredProcedureType.values().sortedBy { sp -> sp.ordinal }
+
+        // we need to drop bulk in order to be sure bulk type is delete after all
+        if (overwrite) {
+            listStoredProcedureType.forEach { storedProcedureType ->
+                val exists = internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+
+                if (exists)
+                    internalDropStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+            }
+
+        }
+
+        // Order Desc is the correct order to Create
+        listStoredProcedureType = DbStoredProcedureType.values().sortedByDescending { sp -> sp.ordinal }
+
+        listStoredProcedureType.forEach { storedProcedureType ->
+            // check with filter
+            if ((storedProcedureType == DbStoredProcedureType.SelectChangesWithFilters || storedProcedureType == DbStoredProcedureType.SelectInitializedChangesWithFilters)
+                && tableBuilder.tableDescription.getFilter() == null)
+                return@forEach
+
+            val exists = internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+
+            // Drop storedProcedure if already exists
+            if (exists && overwrite)
+                internalDropStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+
+            val shouldCreate = !exists || overwrite
+
+            if (!shouldCreate)
+                return@forEach
+
+            val created = internalCreateStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+
+            // If at least one stored proc has been created, we're good to return true;
+            if (created)
+                hasCreatedAtLeastOneStoredProcedure = true
+        }
+
+        return hasCreatedAtLeastOneStoredProcedure
+    }
+
+    /**
      * Internal add column routine
      */
     internal fun internalAddColumn(
@@ -2595,7 +2681,7 @@ abstract class BaseOrchestrator(
         progress: Progress<ProgressArgs>?
 
     ): Boolean {
-        if (tableBuilder.tableDescription.columns.size <= 0)
+        if (tableBuilder.tableDescription.columns!!.size <= 0)
             throw MissingsColumnException(tableBuilder.tableDescription.getFullName())
 
         if (tableBuilder.tableDescription.primaryKeys.size <= 0)

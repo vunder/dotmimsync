@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync.builders
 
 import com.mimetis.dotmim.sync.manager.DbRelationDefinition
 import com.mimetis.dotmim.sync.set.SyncColumn
+import com.mimetis.dotmim.sync.set.SyncFilter
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 
@@ -52,4 +53,6 @@ abstract class DbTableBuilder(
     abstract fun existsColumn(columnName: String): Boolean
 
     abstract fun renameTrackingTable(oldTableName: ParserName)
+
+    abstract fun createStoredProcedure(storedProcedureType: DbStoredProcedureType, filter: SyncFilter?)
 }
