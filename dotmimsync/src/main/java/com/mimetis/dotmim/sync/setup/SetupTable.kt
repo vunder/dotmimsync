@@ -31,7 +31,7 @@ class SetupTable(
          */
         @SerialName("sd")
         var syncDirection: SyncDirection = SyncDirection.Bidirectional
-) : SyncNamedItem<SetupFilter>() {
+) : SyncNamedItem<SetupTable>() {
     override fun getAllNamesProperties(): List<String> =
             listOf(this.tableName, this.schemaName)
 }
