@@ -117,7 +117,7 @@ class LocalOrchestrator(
         val ctx = getContext()
         ctx.syncStage = SyncStage.Migrating
         // Migrate the db structure
-        this.internalMigration(ctx, schema, oldSetup, this.setup)
+        this.internalMigration(ctx, schema, oldSetup, this.setup, progress)
 
         // Get Scope Builder
         val scopeBuilder = this.getScopeBuilder(this.options.scopeInfoTableName)
