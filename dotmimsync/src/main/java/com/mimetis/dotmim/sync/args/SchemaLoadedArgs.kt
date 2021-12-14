@@ -12,7 +12,11 @@ class SchemaLoadedArgs(
      */
     val schema: SyncSet
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel
+        get() = SyncProgressLevel.Information
+
     override val message: String = "Schema Loaded For ${this.schema.tables.size} Tables."
+
     override val eventId: Int = 6050
 }
 

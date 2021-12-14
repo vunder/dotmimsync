@@ -19,6 +19,9 @@ class ProvisioningArgs(
      */
     val schema: SyncSet
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel
+        get() = SyncProgressLevel.Debug
+
     override val message: String
         get() = "Provisioning ${schema.tables.size} Tables. Provision:${provision}."
 

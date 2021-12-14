@@ -19,8 +19,12 @@ class DeprovisioningArgs(
      */
     val schema: SyncSet
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel
+        get() = SyncProgressLevel.Debug
+
     override val message: String =
         "Deprovisioning ${schema.tables.size} Tables. Provision:$provision."
+
     override val eventId: Int = 5100
 }
 

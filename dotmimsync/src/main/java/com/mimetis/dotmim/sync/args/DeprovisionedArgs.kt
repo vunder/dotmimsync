@@ -11,6 +11,9 @@ class DeprovisionedArgs(
     val provision: EnumSet<SyncProvision>,
     val schema: SyncSet
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel
+        get() = SyncProgressLevel.Information
+
     override val message: String =
         "Deprovisioned ${schema.tables.size} Tables. Provision: $provision."
 

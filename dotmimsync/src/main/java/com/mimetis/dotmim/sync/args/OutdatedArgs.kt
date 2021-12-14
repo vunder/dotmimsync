@@ -18,8 +18,12 @@ class OutdatedArgs(
      */
     val serverScopeInfo: ServerScopeInfo
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel
+        get() = SyncProgressLevel.Information
+
     override val message: String=
         "Database Out Dated. Last Client Sync Endpoint ${clientScopeInfo.lastServerSyncTimestamp} < Last Server Cleanup Metadatas ${serverScopeInfo.lastCleanupTimestamp}."
+
     override val eventId: Int =
         5000
 
