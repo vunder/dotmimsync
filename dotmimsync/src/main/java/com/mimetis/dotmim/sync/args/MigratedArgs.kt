@@ -2,8 +2,10 @@ package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
-import com.mimetis.dotmim.sync.messages.MessageGetChangesBatch
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
+import com.mimetis.dotmim.sync.set.SyncSet
+import com.mimetis.dotmim.sync.setup.MigrationResults
+import com.mimetis.dotmim.sync.setup.SyncSetup
 
 /**
  * Object representing a migration about to start
@@ -41,5 +43,5 @@ class MigratedArgs(
 /**
  * Intercept the orchestrator when a Setup has been migrated
  */
-fun BaseOrchestrator.OnMigrated(action: (MigratedArgs) -> Unit) =
+fun BaseOrchestrator.onMigrated(action: (MigratedArgs) -> Unit) =
     this.setInterceptor(action)

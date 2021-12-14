@@ -2,8 +2,8 @@ package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
-import com.mimetis.dotmim.sync.messages.MessageGetChangesBatch
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
+import com.mimetis.dotmim.sync.setup.SyncSetup
 
 class MetadataCleaningArgs(
     context: SyncContext,
@@ -25,5 +25,5 @@ class MetadataCleaningArgs(
 /**
  * Intercept the provider action when a provider is cleaning metadata
  */
-fun BaseOrchestrator.OnMetadataCleaning(action: (MetadataCleaningArgs) -> Unit) =
+fun BaseOrchestrator.onMetadataCleaning(action: (MetadataCleaningArgs) -> Unit) =
     this.setInterceptor(action)
