@@ -66,7 +66,7 @@ class LocalOrchestrator(
         val exists = scopeBuilder.existsScopeInfoTable()
         if (!exists)
             internalCreateScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
-        return internalGetClientScope(this.getContext(), scopeName, scopeBuilder, progress)
+        return internalGetScope(ctx, DbScopeType.Client, scopeName, scopeBuilder, progress)
     }
 
     fun internalNeedsToUpgrade(context: SyncContext, scopeInfo: ScopeInfo): Boolean {
@@ -93,7 +93,7 @@ class LocalOrchestrator(
             val exists = builder.existsScopeInfoTable()
 
             if (exists)
-                scopeInfo = this.internalGetClientScope(ctx, this.scopeName, builder, progress)
+                scopeInfo = this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, builder, progress)
 
             if (scopeInfo == null)
                 throw MissingClientScopeInfoException()
@@ -129,12 +129,12 @@ class LocalOrchestrator(
         if (!exists)
             scopeBuilder.createScopeInfoTable()
 
-        localScope = this.internalGetClientScope(ctx, this.scopeName, scopeBuilder, progress)
+        localScope = this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, scopeBuilder, progress) ?: return
 
         localScope.setup = this.setup
         localScope.schema = schema
 
-        this.internalSaveScope(localScope, scopeBuilder, progress)
+        this.internalSaveScope(ctx, localScope, scopeBuilder, progress)
     }
 
     /**
@@ -163,7 +163,7 @@ class LocalOrchestrator(
             if (!exists)
                 scopeBuilder.createScopeInfoTable()
 
-            scopeInfo = this.internalGetClientScope(ctx, this.scopeName, scopeBuilder, progress)
+            scopeInfo = this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, scopeBuilder, progress)
         }
 
         // If no schema in the client scope. Maybe the client scope table does not exists, or we never get the schema from server
@@ -236,7 +236,7 @@ class LocalOrchestrator(
         var si = scopeInfo
         if (oldVersion.toVersionInt() != version.toVersionInt()) {
             si.version = version
-            si = this.internalSaveScope(scopeInfo, builder, progress)
+            si = this.internalSaveScope(context, scopeInfo, builder, progress)
         }
         return si
     }
@@ -346,7 +346,7 @@ class LocalOrchestrator(
         // Write scopes locally
         val scopeBuilder = this.getScopeBuilder(this.options.scopeInfoTableName)
 
-        this.internalSaveScope(scope, scopeBuilder, progress)
+        this.internalSaveScope(ctx, scope, scopeBuilder, progress)
 
         return Pair(clientChangesApplied, scope)
     }
@@ -408,7 +408,7 @@ class LocalOrchestrator(
             val exists = scopeBuilder.existsScopeInfoTable()
 
             if (exists)
-                clientSI = this.internalGetClientScope(ctx, this.scopeName, scopeBuilder, progress)
+                clientSI = this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, scopeBuilder, progress)
         }
 
         return internalProvision(ctx, overwrite, schema, this.setup, provision, clientSI, progress)
@@ -476,7 +476,7 @@ class LocalOrchestrator(
 
             if (exists)
                 clientScopeInfo =
-                    this.internalGetClientScope(ctx, this.scopeName, scopeBuilder, progress)
+                    this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, scopeBuilder, progress)
         }
 
         val isDeprovisioned =

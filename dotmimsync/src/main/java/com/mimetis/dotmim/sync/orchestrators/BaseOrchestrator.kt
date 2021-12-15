@@ -141,7 +141,7 @@ abstract class BaseOrchestrator(
             if (!exists)
                 scopeBuilder.createScopeInfoTable()
 
-            scope = this.internalGetClientScope(ctx, this.scopeName, scopeBuilder, progress)
+            scope = this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, scopeBuilder, progress)
         }
 
         // Sorting tables based on dependencies between them
@@ -184,7 +184,7 @@ abstract class BaseOrchestrator(
             clientScopeInfo.schema = schema
             clientScopeInfo.setup = setup
 
-            this.internalSaveScope(clientScopeInfo, scopeBuilder, progress)
+            this.internalSaveScope(ctx, clientScopeInfo, scopeBuilder, progress)
         }
 
         val args = ProvisionedArgs(ctx, provision, schema)
@@ -453,13 +453,40 @@ abstract class BaseOrchestrator(
         return context
     }
 
-    internal fun internalGetClientScope(
+    /**
+     * Internal load all scopes routine
+     */
+    internal fun internalGetAllScopes(
+            ctx: SyncContext,
+            scopeType: DbScopeType,
+            scopeName: String,
+            scopeBuilder: DbScopeBuilder,
+            progress: Progress<ProgressArgs>?
+    ): MutableList<ScopeInfo> {
+        val action = ScopeLoadingArgs(ctx, scopeName, scopeType)
+        this.intercept(action, progress)
+
+        if (action.cancel)
+            return mutableListOf()
+
+        this.intercept(DbCommandArgs(ctx, "internalGetAllScopes"), progress)
+
+        val scopes = scopeBuilder.getAllScopes(scopeName)
+
+        return scopes
+    }
+
+    /**
+     * Internal load scope routine
+     */
+    internal fun internalGetScope(
         ctx: SyncContext,
+        scopeType: DbScopeType,
         scopeName: String,
         scopeBuilder: DbScopeBuilder,
         progress: Progress<ProgressArgs>?
     ): ScopeInfo {
-        val scopes = scopeBuilder.getAllScopes(scopeName)
+        val scopes = internalGetAllScopes(ctx, scopeType, scopeName, scopeBuilder, progress)
         if (scopes.isEmpty()) {
             var scope = ScopeInfo(
                 id = UUID.randomUUID(),
@@ -470,7 +497,7 @@ abstract class BaseOrchestrator(
                 lastSyncTimestamp = null,
                 version = SyncVersion.current
             )
-            scope = internalSaveScope(scope, scopeBuilder, progress)
+            scope = internalSaveScope(ctx, scope, scopeBuilder, progress)
             scopes.add(scope)
         }
 
@@ -484,18 +511,23 @@ abstract class BaseOrchestrator(
     }
 
     internal fun internalSaveScope(
+            ctx: SyncContext,
         scope: ScopeInfo,
         scopeBuilder: DbScopeBuilder,
         progress: Progress<ProgressArgs>?
     ): ScopeInfo {
         val scopeExists = scopeBuilder.existsScopeInfo(scope.id)
         val action = ScopeSavingArgs(
-            getContext(),
+            ctx,
             scopeBuilder.scopeInfoTableName.toString(),
             DbScopeType.Client,
             scope
         )
-        intercept(action)
+        intercept(action, progress)
+        if (action.cancel)
+            throw Exception("Scope saving was cancelled, cannot continue")
+//            return null
+
         val newScopeInfo = if (scopeExists)
             scopeBuilder.updateScope(scope)
         else
@@ -503,11 +535,12 @@ abstract class BaseOrchestrator(
 
         intercept(
             ScopeSavedArgs(
-                getContext(),
+                ctx,
                 scopeBuilder.scopeInfoTableName.toString(),
                 DbScopeType.Client,
                 newScopeInfo
-            )
+            ),
+                progress
         )
         return newScopeInfo
     }
@@ -2387,7 +2420,7 @@ abstract class BaseOrchestrator(
             val exists = scopeBuilder.existsScopeInfoTable()
 
             if (exists)
-                this.internalSaveScope(clientScopeInfo, scopeBuilder, progress)
+                this.internalSaveScope(ctx, clientScopeInfo, scopeBuilder, progress)
         } else if (this is RemoteOrchestrator && !hasDeleteServerScopeTable && scope != null) {
 //            var serverScopeInfo = scope as ServerScopeInfo
 //            serverScopeInfo.schema = schema

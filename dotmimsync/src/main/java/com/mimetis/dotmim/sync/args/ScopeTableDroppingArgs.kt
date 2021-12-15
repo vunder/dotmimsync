@@ -5,20 +5,18 @@ import com.mimetis.dotmim.sync.builders.DbScopeType
 import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 
-class ScopeTableCreatingArgs(
+class ScopeTableDroppingArgs (
     context: SyncContext,
     val scopeName: String,
     val scopeType: DbScopeType
 ) : ProgressArgs(context) {
-    var cancel: Boolean = false
-
     override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
-    override val message = "Scope Table [$scopeType] Creating."
-    override val eventId: Int = 7000
+    override val message: String = "Scope Table [$scopeType] Dropping."
+    override val eventId: Int = 7100
 }
 
 /**
- * Intercept the provider action when a scope table is creating
+ * Intercept the provider action when a scope table is dropping
  */
-fun BaseOrchestrator.onScopeTableCreating(action: (ScopeTableCreatingArgs) -> Unit) =
+fun BaseOrchestrator.onScopeTableDropping(action: (ScopeTableDroppingArgs ) -> Unit) =
     this.setInterceptor(action)
