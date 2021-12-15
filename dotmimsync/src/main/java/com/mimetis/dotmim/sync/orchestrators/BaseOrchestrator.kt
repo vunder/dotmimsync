@@ -519,6 +519,9 @@ abstract class BaseOrchestrator(
         }
         localScope.schema?.ensureSchema()
 
+        val scopeLoadedArgs = ScopeLoadedArgs<ScopeInfo>(ctx, scopeName, scopeType, localScope)
+        this.intercept(scopeLoadedArgs, progress)
+
         return localScope
     }
 
