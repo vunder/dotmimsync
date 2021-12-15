@@ -70,6 +70,11 @@ class SyncSetup(
         get() = this.tables.size > 0
 
     /**
+     * Check if Setup has a table that has columns
+     */
+    fun hasTableWithColumns(tableName: String) = (this.tables[tableName]?.columns?.size ?: 0) > 0
+
+    /**
      * Check if two setups have the same local options
      */
     fun hasSameOptions(otherSetup: SyncSetup?) =

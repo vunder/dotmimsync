@@ -93,37 +93,37 @@ class SyncSet(
         return clone
     }
 
-    /**
-     * Import a container set in a SyncSet instance
-     */
-    fun importContainerSet(containerSet: ContainerSet, checkType: Boolean) {
-        for (table in containerSet.tables) {
-            val syncTable = this.tables[table.tableName, table.schemaName ?: ""]
-
-            if (syncTable == null)
-                throw NullPointerException("Table ${table.tableName} does not exist in the SyncSet")
-
-            syncTable.rows.importContainerTable(table, checkType)
-        }
-    }
-
-    /**
-     * Get the rows inside a container.
-     * ContainerSet is a serialization container for rows
-     */
-    fun getContainerSet(): ContainerSet {
-        val containerSet = ContainerSet()
-        for (table in this.tables) {
-            val containerTable = ContainerTable(table).apply {
-                rows = table.rows.exportToContainerTable().toMutableList()
-            }
-
-            if (containerTable.rows?.isNotEmpty() == true)
-                containerSet.tables.add(containerTable)
-        }
-
-        return containerSet
-    }
+//    /**
+//     * Import a container set in a SyncSet instance
+//     */
+//    fun importContainerSet(containerSet: ContainerSet, checkType: Boolean) {
+//        for (table in containerSet.tables) {
+//            val syncTable = this.tables[table.tableName, table.schemaName ?: ""]
+//
+//            if (syncTable == null)
+//                throw NullPointerException("Table ${table.tableName} does not exist in the SyncSet")
+//
+//            syncTable.rows.importContainerTable(table, checkType)
+//        }
+//    }
+//
+//    /**
+//     * Get the rows inside a container.
+//     * ContainerSet is a serialization container for rows
+//     */
+//    fun getContainerSet(): ContainerSet {
+//        val containerSet = ContainerSet()
+//        for (table in this.tables) {
+//            val containerTable = ContainerTable(table).apply {
+//                rows = table.rows.exportToContainerTable().toMutableList()
+//            }
+//
+//            if (containerTable.rows?.isNotEmpty() == true)
+//                containerSet.tables.add(containerTable)
+//        }
+//
+//        return containerSet
+//    }
 
     fun clear() {
         this.tables.clear()

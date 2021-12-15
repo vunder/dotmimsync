@@ -14,42 +14,42 @@ import com.mimetis.dotmim.sync.sqlite.CursorHelper.getValue
  */
 @Serializable
 class SyncTable(
-        /**
-         * Gets or sets the name of the table that the DmTableSurrogate object represents.
-         */
-        @SerialName("n")
-        var tableName: String,
+    /**
+     * Gets or sets the name of the table that the DmTableSurrogate object represents.
+     */
+    @SerialName("n")
+    var tableName: String,
 
-        /**
-         * Get or Set the schema used for the DmTableSurrogate
-         */
-        @SerialName("s")
-        var schemaName: String = "",
+    /**
+     * Get or Set the schema used for the DmTableSurrogate
+     */
+    @SerialName("s")
+    var schemaName: String = "",
 
-        /**
-         * Gets or Sets the original provider (SqlServer, MySql, Sqlite, Oracle, PostgreSQL)
-         */
-        @SerialName("op")
-        var originalProvider: String? = null,
+    /**
+     * Gets or Sets the original provider (SqlServer, MySql, Sqlite, Oracle, PostgreSQL)
+     */
+    @SerialName("op")
+    var originalProvider: String? = null,
 
-        /**
-         * Gets or Sets the Sync direction (may be Bidirectional, DownloadOnly, UploadOnly)
-         * Default is @see SyncDirection.Bidirectional
-         */
-        @SerialName("sd")
-        var syncDirection: SyncDirection = SyncDirection.Bidirectional,
+    /**
+     * Gets or Sets the Sync direction (may be Bidirectional, DownloadOnly, UploadOnly)
+     * Default is @see SyncDirection.Bidirectional
+     */
+    @SerialName("sd")
+    var syncDirection: SyncDirection = SyncDirection.Bidirectional,
 
-        /**
-         * Gets or Sets the table columns
-         */
-        @SerialName("c")
-        var columns: SyncColumns? = null,
+    /**
+     * Gets or Sets the table columns
+     */
+    @SerialName("c")
+    var columns: SyncColumns? = null,
 
-        /**
-         * Gets or Sets the table primary keys
-         */
-        @SerialName("pk")
-        var primaryKeys: ArrayList<String> = ArrayList()
+    /**
+     * Gets or Sets the table primary keys
+     */
+    @SerialName("pk")
+    var primaryKeys: ArrayList<String> = ArrayList()
 ) : SyncNamedItem<SyncTable>() {
     /**
      * Gets the ShemaTable's rows
@@ -106,13 +106,7 @@ class SyncTable(
         }
     }
 
-    fun newRow(state: DataRowState = DataRowState.Unchanged): SyncRow {
-        val row = SyncRow(this.columns?.size ?: 0).apply {
-            rowState = state
-            table = this@SyncTable
-        }
-        return row
-    }
+    fun newRow(state: DataRowState = DataRowState.Unchanged): SyncRow = SyncRow(this, state)
 
     fun getRelations(): List<SyncRelation> {
         if (this.schema == null)
@@ -124,48 +118,52 @@ class SyncTable(
      * Gets the full name of the table, based on schema name + "." + table name (if schema name exists)
      */
     fun getFullName(): String =
-            if (this.schemaName.isBlank()) this.tableName else "$schemaName.$tableName"
+        if (this.schemaName.isBlank()) this.tableName else "$schemaName.$tableName"
 
     /**
      * Get all columns that are Primary keys, based on the names we have in PrimariKeys property
      */
     fun getPrimaryKeysColumns(): List<SyncColumn> =
-            this.columns!!.sortedBy { c -> c.ordinal }
-                    .filter { column ->
-                        this.primaryKeys.any { pkey -> column.columnName.equals(pkey, true) }
-                    }
+        this.columns!!.sortedBy { c -> c.ordinal }
+            .filter { column ->
+                this.primaryKeys.any { pkey -> column.columnName.equals(pkey, true) }
+            }
 
     /**
      * Get all columns that can be updated
      */
-    fun getMutableColumns(includeAutoIncrement: Boolean = true, includePrimaryKeys: Boolean = false): List<SyncColumn> =
-            this.columns!!.sortedBy { c -> c.ordinal }
-                    .filter { column -> !column.isCompute && !column.isReadOnly }
-                    .filter { column ->
-                        val isPrimaryKey = this.primaryKeys.any { pkey -> column.columnName.equals(pkey, true) }
-                        return@filter (includePrimaryKeys && isPrimaryKey) || (!isPrimaryKey && (includeAutoIncrement || (!includeAutoIncrement && !column.isAutoIncrement)))
-                    }
+    fun getMutableColumns(
+        includeAutoIncrement: Boolean = true,
+        includePrimaryKeys: Boolean = false
+    ): List<SyncColumn> =
+        this.columns!!.sortedBy { c -> c.ordinal }
+            .filter { column -> !column.isCompute && !column.isReadOnly }
+            .filter { column ->
+                val isPrimaryKey =
+                    this.primaryKeys.any { pkey -> column.columnName.equals(pkey, true) }
+                return@filter (includePrimaryKeys && isPrimaryKey) || (!isPrimaryKey && (includeAutoIncrement || (!includeAutoIncrement && !column.isAutoIncrement)))
+            }
 
     /**
      * Get all columns that can be queried
      */
     fun getMutableColumnsWithPrimaryKeys(): List<SyncColumn> =
-            this.columns!!
-                    .sortedBy { c -> c.ordinal }
-                    .filter { column -> !column.isCompute && !column.isReadOnly }
+        this.columns!!
+            .sortedBy { c -> c.ordinal }
+            .filter { column -> !column.isCompute && !column.isReadOnly }
 
     /**
      * Clone the table structure (without rows)
      */
     fun clone(): SyncTable =
-            SyncTable(
-                    this.tableName,
-                    this.schemaName,
-                    this.originalProvider,
-                    this.syncDirection,
-                    SyncColumns(this).apply { addAll(this@SyncTable.columns!!) },
-                    ArrayList(this.primaryKeys)
-            )
+        SyncTable(
+            this.tableName,
+            this.schemaName,
+            this.originalProvider,
+            this.syncDirection,
+            SyncColumns(this).apply { addAll(this@SyncTable.columns!!) },
+            ArrayList(this.primaryKeys)
+        )
 
     fun clear() {
         this.rows.clear()
@@ -188,7 +186,7 @@ class SyncTable(
     }
 
     override fun getAllNamesProperties(): List<String> =
-            listOf(this.tableName, this.schemaName)
+        listOf(this.tableName, this.schemaName)
 
     override fun equalsByProperties(otherInstance: SyncTable?): Boolean {
         if (otherInstance == null)
