@@ -133,13 +133,14 @@ abstract class BaseOrchestrator(
 
         val scopeBuilder = this.getScopeBuilder(options.scopeInfoTableName)
 
-        // Shoudl we create scope
         var scope = scope
+        // Shoudl we create scope
+        // if scope is not null, so obviously we have create the table before, so no need to test
         if (provision.contains(SyncProvision.ClientScope) && scope == null) {
-            val exists = scopeBuilder.existsScopeInfoTable()
+            val exists = internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
             if (!exists)
-                scopeBuilder.createScopeInfoTable()
+                internalCreateScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
             scope = this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, scopeBuilder, progress)
         }
@@ -242,6 +243,19 @@ abstract class BaseOrchestrator(
     }
 
     /**
+     * Internal exists scope table routine
+     */
+    internal fun internalExistsScopeInfoTable(
+            ctx: SyncContext,
+            scopeType: DbScopeType,
+            scopeBuilder: DbScopeBuilder,
+            progress: Progress<ProgressArgs>?
+    ) : Boolean {
+        this.intercept(DbCommandArgs(ctx, "InternalExistsScopeInfoTableAsync"), progress)
+        return scopeBuilder.existsScopeInfoTable()
+    }
+
+    /**
      * Internal create scope info table routine
      */
     internal fun internalCreateScopeInfoTable(
@@ -250,20 +264,18 @@ abstract class BaseOrchestrator(
         scopeBuilder: DbScopeBuilder,
         progress: Progress<ProgressArgs>? = null
     ): Boolean {
-        val action = ScopeTableCreatingArgs(
-            ctx,
-            scopeBuilder.scopeInfoTableName.toString(),
-            scopeType
-        )
-        this.intercept(action)
+        val action = ScopeTableCreatingArgs(ctx, scopeBuilder.scopeInfoTableName.toString(), scopeType)
+        this.intercept(action, progress)
+
+        if (action.cancel)
+            return false
+
+        this.intercept(DbCommandArgs(ctx, "internalCreateScopeInfoTable"), progress)
+
         scopeBuilder.createScopeInfoTable()
-        this.intercept(
-            ScopeTableCreatedArgs(
-                ctx,
-                scopeBuilder.scopeInfoTableName.toString(),
-                scopeType
-            )
-        )
+
+        this.intercept(ScopeTableCreatedArgs(ctx, scopeBuilder.scopeInfoTableName.toString(), scopeType), progress)
+
         return true
     }
 
@@ -2387,7 +2399,7 @@ abstract class BaseOrchestrator(
         var hasDeleteClientScopeTable = false
         var hasDeleteServerScopeTable = false
         if (provision.contains(SyncProvision.ClientScope)) {
-            val exists = scopeBuilder.existsScopeInfoTable()
+            val exists = internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
             if (exists) {
                 this.internalDropScopeInfoTable(ctx, scopeBuilder, progress)
@@ -2417,7 +2429,7 @@ abstract class BaseOrchestrator(
             clientScopeInfo.schema = null
             clientScopeInfo.setup = null
 
-            val exists = scopeBuilder.existsScopeInfoTable()
+            val exists = internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
             if (exists)
                 this.internalSaveScope(ctx, clientScopeInfo, scopeBuilder, progress)
