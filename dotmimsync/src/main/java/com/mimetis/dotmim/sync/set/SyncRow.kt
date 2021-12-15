@@ -4,31 +4,55 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import com.mimetis.dotmim.sync.DataRowState
 import com.mimetis.dotmim.sync.PrimitiveSerializer
+import java.lang.StringBuilder
 import java.util.*
 
 @Serializable
 class SyncRow(@Transient val length: Int = 0) {
     private var buffer: Array<@Serializable(with = PrimitiveSerializer::class) Any?> =
-        Array(length) {}
+        Array(length + 1) {}
 
-    lateinit var table: SyncTable
-    lateinit var rowState: DataRowState
+    /**
+     * Gets or Sets the row's table
+     */
+    lateinit var schemaTable: SyncTable
 
     //    val length: Int
 //        get() = buffer.size
 
     constructor(
-        table: SyncTable,
-        row: Array<Any?>,
+        schemaTable: SyncTable,
         state: DataRowState = DataRowState.Unchanged
-    ) : this(0) {
-        buffer = row
-        this.table = table
-        this.rowState = state
+    ) : this(schemaTable.columns!!.size) {
+        // Affect new state
+        this.schemaTable = schemaTable
+        // Affect new state
+        buffer[0] = state.ordinal
     }
 
+    constructor(
+        schemaTable: SyncTable,
+        row: Array<Any?>
+    ) : this(schemaTable.columns!!.size) {
+        if (row.size <= schemaTable.columns!!.size)
+            throw IllegalArgumentException("row array must have one more item to store state")
+        if (row.size > (schemaTable.columns!!.size + 1))
+            throw IllegalArgumentException("row array has too many items")
+
+        // Direct set of the buffer
+        this.buffer = row
+        // set columns count as length
+        this.schemaTable = schemaTable
+    }
+
+    var rowState: DataRowState
+        get() = DataRowState.values()[this.buffer[0] as Int]
+        set(value) {
+            this.buffer[0] = value.ordinal
+        }
+
     operator fun get(columnName: String): Any? {
-        val index = table.columns!!.getIndex(columnName)
+        val index = schemaTable.columns!!.getIndex(columnName)
         return this[index]
     }
 
@@ -39,41 +63,44 @@ class SyncRow(@Transient val length: Int = 0) {
         this[column.columnName]
 
     operator fun set(columnName: String, value: Any?) {
-        val column = table.columns!![columnName]
-        val index = table.columns!!.indexOf(column)
+        val index = schemaTable.columns!!.getIndex(columnName)
         this[index] = value
     }
 
     operator fun get(index: Int): Any? {
-        return buffer[index]
+        return buffer[index+1]
     }
 
     operator fun set(index: Int, value: Any?) {
-        buffer[index] = value
+        buffer[index+1] = value
     }
 
-    fun toArray(): Array<Any?> {
-        val array = Array<Any?>(this.length + 1) {}
-        System.arraycopy(this.buffer, 0, array, 1, this.length)
-        array[0] = this.rowState.value
-        return array
-    }
+    fun toArray(): Array<Any?> = this.buffer
 
-    /**
-     * Import a raw array, containing state on Index 0
-     */
-    fun fromArray(row: Array<Any?>) {
-        val length = table.columns?.size ?: 0
+    fun clear() = Arrays.fill(buffer, 0)
 
-        if (row.size != length + 1)
-            throw Exception("row must contains State on position 0 and UpdateScopeId on position 1")
+    override fun toString(): String {
+        if (this.buffer == null || this.length == 0)
+            return "empty row"
 
-        System.arraycopy(row, 1, buffer, 0, length)
-        this.rowState = row[0] as DataRowState
-    }
+        if (!::schemaTable.isInitialized)
+            return buffer.toString()
 
-    fun clear() {
-        Arrays.fill(buffer, null)
-        //this.table = null
+        val sb = StringBuilder(100)
+        sb.append("[Sync state]:${this.rowState}")
+
+        val columns = if (this.rowState == DataRowState.Deleted)
+            this.schemaTable.getPrimaryKeysColumns()
+        else
+            this.schemaTable.columns!!
+
+        columns.forEach { c ->
+            val o = this[c.columnName]
+            val os = o?.toString() ?: "<NULL />"
+
+            sb.append(", [${c.columnName}]:${os}")
+        }
+
+        return sb.toString()
     }
 }

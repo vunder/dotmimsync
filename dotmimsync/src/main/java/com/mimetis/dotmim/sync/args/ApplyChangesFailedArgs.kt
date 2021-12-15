@@ -3,6 +3,7 @@ package com.mimetis.dotmim.sync.args
 import com.mimetis.dotmim.sync.SyncConflict
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.enumerations.ConflictResolution
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncRow
 import java.util.*
@@ -25,6 +26,8 @@ class ApplyChangesFailedArgs(
      */
     val senderScopeId: UUID?
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Information
+
     private var _resolution: ConflictResolution = resolution
 
     /**
@@ -39,16 +42,13 @@ class ApplyChangesFailedArgs(
 
                 if (this._resolution == ConflictResolution.MergeRow) {
                     val finalRowArray = this.conflict.remoteRow.toArray()
-                    val finalTable = this.conflict.remoteRow.table.clone()
-                    val finalSet = this.conflict.remoteRow.table.schema?.clone(false)
+                    val finalTable = this.conflict.remoteRow.schemaTable.clone()
+                    val finalSet = this.conflict.remoteRow.schemaTable.schema?.clone(false)
                     finalSet?.tables?.add(finalTable)
-                    this.finalRow = SyncRow(finalTable.columns?.size ?: 0)
-                    this.finalRow.table = finalTable
-
-                    this.finalRow.fromArray(finalRowArray)
+                    this.finalRow = SyncRow(this.conflict.remoteRow.schemaTable, finalRowArray)
                     finalTable.rows.add(this.finalRow)
                 } else if (::finalRow.isInitialized) {
-                    val finalSet = this.finalRow.table.schema
+                    val finalSet = this.finalRow.schemaTable.schema
                     this.finalRow.clear()
                     finalSet?.clear()
                     finalSet?.close()

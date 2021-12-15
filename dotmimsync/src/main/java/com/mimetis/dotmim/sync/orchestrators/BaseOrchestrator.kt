@@ -68,7 +68,10 @@ abstract class BaseOrchestrator(
      * Because we are not doing anything else than just returning a task, no need to use async / await. Just return the Task itself
      */
     @Suppress("EXPERIMENTAL_API_USAGE_ERROR")
-    internal inline fun <reified T : ProgressArgs> intercept(args: T, progress: Progress<ProgressArgs>? = null): T {
+    internal inline fun <reified T : ProgressArgs> intercept(
+        args: T,
+        progress: Progress<ProgressArgs>? = null
+    ): T {
         val interceptor = this.interceptors.getInterceptor<T>()
         interceptor.run(args)
 
@@ -137,12 +140,19 @@ abstract class BaseOrchestrator(
         // Shoudl we create scope
         // if scope is not null, so obviously we have create the table before, so no need to test
         if (provision.contains(SyncProvision.ClientScope) && scope == null) {
-            val exists = internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
+            val exists =
+                internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
             if (!exists)
                 internalCreateScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
-            scope = this.internalGetScope(ctx, DbScopeType.Client, this.scopeName, scopeBuilder, progress)
+            scope = this.internalGetScope(
+                ctx,
+                DbScopeType.Client,
+                this.scopeName,
+                scopeBuilder,
+                progress
+            )
         }
 
         // Sorting tables based on dependencies between them
@@ -246,11 +256,11 @@ abstract class BaseOrchestrator(
      * Internal exists scope table routine
      */
     internal fun internalExistsScopeInfoTable(
-            ctx: SyncContext,
-            scopeType: DbScopeType,
-            scopeBuilder: DbScopeBuilder,
-            progress: Progress<ProgressArgs>?
-    ) : Boolean {
+        ctx: SyncContext,
+        scopeType: DbScopeType,
+        scopeBuilder: DbScopeBuilder,
+        progress: Progress<ProgressArgs>?
+    ): Boolean {
         this.intercept(DbCommandArgs(ctx, "InternalExistsScopeInfoTableAsync"), progress)
         return scopeBuilder.existsScopeInfoTable()
     }
@@ -264,7 +274,8 @@ abstract class BaseOrchestrator(
         scopeBuilder: DbScopeBuilder,
         progress: Progress<ProgressArgs>? = null
     ): Boolean {
-        val action = ScopeTableCreatingArgs(ctx, scopeBuilder.scopeInfoTableName.toString(), scopeType)
+        val action =
+            ScopeTableCreatingArgs(ctx, scopeBuilder.scopeInfoTableName.toString(), scopeType)
         this.intercept(action, progress)
 
         if (action.cancel)
@@ -274,7 +285,13 @@ abstract class BaseOrchestrator(
 
         scopeBuilder.createScopeInfoTable()
 
-        this.intercept(ScopeTableCreatedArgs(ctx, scopeBuilder.scopeInfoTableName.toString(), scopeType), progress)
+        this.intercept(
+            ScopeTableCreatedArgs(
+                ctx,
+                scopeBuilder.scopeInfoTableName.toString(),
+                scopeType
+            ), progress
+        )
 
         return true
     }
@@ -339,7 +356,8 @@ abstract class BaseOrchestrator(
         val migrationResults = migration.compare()
 
         // Launch InterceptAsync on Migrating
-        val migratingArgs = this.intercept(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
+        val migratingArgs =
+            this.intercept(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
         // New logic to be able to cancel any migration
         if (migratingArgs.cancel)
             return context
@@ -347,7 +365,8 @@ abstract class BaseOrchestrator(
         // Deprovision triggers stored procedures and tracking table if required
         migrationResults.tables.forEach { migrationTable ->
             // using a fake SyncTable based on oldSetup, since we don't need columns, but we need to have the filters
-            val schemaTable = SyncTable(migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName)
+            val schemaTable =
+                SyncTable(migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName)
 
             // Create a temporary SyncSet for attaching to the schemaTable
             val tmpSchema = SyncSet()
@@ -372,8 +391,7 @@ abstract class BaseOrchestrator(
                 internalDropTriggers(context, tableBuilder, progress)
 
             // Deprovision tracking table
-            if (migrationTable.trackingTable == MigrationAction.Drop || migrationTable.trackingTable == MigrationAction.Create)
-            {
+            if (migrationTable.trackingTable == MigrationAction.Drop || migrationTable.trackingTable == MigrationAction.Create) {
                 val exists = internalExistsTrackingTable(context, tableBuilder, progress)
 
                 if (exists)
@@ -388,8 +406,10 @@ abstract class BaseOrchestrator(
         // Provision table (create or alter), tracking tables, stored procedures and triggers
         // Need the real SyncSet since we need columns definition
         migrationResults.tables.forEach { migrationTable ->
-            val syncTable = schema.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
-            val oldTable = oldSetup.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
+            val syncTable =
+                schema.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
+            val oldTable =
+                oldSetup.tables[migrationTable.setupTable.tableName, migrationTable.setupTable.schemaName]
 
             if (syncTable == null)
                 return@forEach
@@ -397,8 +417,7 @@ abstract class BaseOrchestrator(
             val tableBuilder = this.getTableBuilder(syncTable, newSetup)
 
             // Re provision table
-            if (migrationTable.table == MigrationAction.Create)
-            {
+            if (migrationTable.table == MigrationAction.Create) {
                 // Check if we need to create a schema there
                 val schemaExists = internalExistsSchema(context, tableBuilder, progress)
 
@@ -412,22 +431,38 @@ abstract class BaseOrchestrator(
             }
 
             // Re provision table
-            if (migrationTable.table == MigrationAction.Alter)
-            {
+            if (migrationTable.table == MigrationAction.Alter) {
                 val exists = internalExistsTable(context, tableBuilder, progress)
 
                 if (!exists) {
                     internalCreateTable(context, newSetup, tableBuilder, progress)
-                }
-                else if (oldTable != null) {
+                } else if (oldTable != null) {
                     //get new columns to add
-                    val newColumns = syncTable.columns!!.filter{ c -> !oldTable.columns.any{ oldC -> oldC.equals(c.columnName, true) } }
+                    val newColumns = syncTable.columns!!.filter { c ->
+                        !oldTable.columns.any { oldC ->
+                            oldC.equals(
+                                c.columnName,
+                                true
+                            )
+                        }
+                    }
 
                     if (newColumns != null) {
                         newColumns.forEach { newColumn ->
-                            val columnExist = internalExistsColumn(context, newColumn.columnName, tableBuilder, progress)
+                            val columnExist = internalExistsColumn(
+                                context,
+                                newColumn.columnName,
+                                tableBuilder,
+                                progress
+                            )
                             if (!columnExist)
-                                internalAddColumn(context, newSetup, newColumn.columnName, tableBuilder, progress)
+                                internalAddColumn(
+                                    context,
+                                    newSetup,
+                                    newColumn.columnName,
+                                    tableBuilder,
+                                    progress
+                                )
                         }
                     }
                 }
@@ -435,12 +470,15 @@ abstract class BaseOrchestrator(
 
             // Re provision tracking table
             if (migrationTable.trackingTable == MigrationAction.Rename && oldTable != null) {
-                val (_, oldTableName) = this.provider.getParsers(SyncTable(oldTable.tableName, oldTable.schemaName), oldSetup)
+                val (_, oldTableName) = this.provider.getParsers(
+                    SyncTable(
+                        oldTable.tableName,
+                        oldTable.schemaName
+                    ), oldSetup
+                )
 
                 internalRenameTrackingTable(context, newSetup, oldTableName, tableBuilder, progress)
-            }
-            else if (migrationTable.trackingTable == MigrationAction.Create)
-            {
+            } else if (migrationTable.trackingTable == MigrationAction.Create) {
                 val exists = internalExistsTrackingTable(context, tableBuilder, progress)
                 if (exists)
                     internalDropTrackingTable(context, newSetup, tableBuilder, progress)
@@ -469,11 +507,11 @@ abstract class BaseOrchestrator(
      * Internal load all scopes routine
      */
     internal fun internalGetAllScopes(
-            ctx: SyncContext,
-            scopeType: DbScopeType,
-            scopeName: String,
-            scopeBuilder: DbScopeBuilder,
-            progress: Progress<ProgressArgs>?
+        ctx: SyncContext,
+        scopeType: DbScopeType,
+        scopeName: String,
+        scopeBuilder: DbScopeBuilder,
+        progress: Progress<ProgressArgs>?
     ): MutableList<ScopeInfo> {
         val action = ScopeLoadingArgs(ctx, scopeName, scopeType)
         this.intercept(action, progress)
@@ -526,7 +564,7 @@ abstract class BaseOrchestrator(
     }
 
     internal fun internalSaveScope(
-            ctx: SyncContext,
+        ctx: SyncContext,
         scope: ScopeInfo,
         scopeBuilder: DbScopeBuilder,
         progress: Progress<ProgressArgs>?
@@ -555,7 +593,7 @@ abstract class BaseOrchestrator(
                 DbScopeType.Client,
                 newScopeInfo
             ),
-                progress
+            progress
         )
         return newScopeInfo
     }
@@ -907,7 +945,8 @@ abstract class BaseOrchestrator(
         tableBuilder: DbTableBuilder,
         progress: Progress<ProgressArgs>?
     ): Boolean {
-        val action = this.intercept(SchemaNameCreatingArgs(ctx, tableBuilder.tableDescription), progress)
+        val action =
+            this.intercept(SchemaNameCreatingArgs(ctx, tableBuilder.tableDescription), progress)
 
         if (action.cancel)
             return false
@@ -943,9 +982,16 @@ abstract class BaseOrchestrator(
         if (tableBuilder.tableDescription.primaryKeys.isEmpty())
             throw  MissingPrimaryKeyException(tableBuilder.tableDescription.getFullName())
 
-        val trackingTableName = this.provider.getParsers(tableBuilder.tableDescription, setup).second
+        val trackingTableName =
+            this.provider.getParsers(tableBuilder.tableDescription, setup).second
 
-        val action = this.intercept(TrackingTableCreatingArgs(ctx, tableBuilder.tableDescription, trackingTableName),progress)
+        val action = this.intercept(
+            TrackingTableCreatingArgs(
+                ctx,
+                tableBuilder.tableDescription,
+                trackingTableName
+            ), progress
+        )
 
         if (action.cancel)
             return false
@@ -954,7 +1000,13 @@ abstract class BaseOrchestrator(
 
         tableBuilder.createTrackingTable()
 
-        var ttca = this.intercept(TrackingTableCreatedArgs(ctx, tableBuilder.tableDescription, trackingTableName), progress)
+        var ttca = this.intercept(
+            TrackingTableCreatedArgs(
+                ctx,
+                tableBuilder.tableDescription,
+                trackingTableName
+            ), progress
+        )
 
         return true
     }
@@ -975,9 +1027,17 @@ abstract class BaseOrchestrator(
         if (tableBuilder.tableDescription.primaryKeys.size <= 0)
             throw MissingPrimaryKeyException(tableBuilder.tableDescription.getFullName())
 
-        val trackingTableName = this.provider.getParsers(tableBuilder.tableDescription, setup).second
+        val trackingTableName =
+            this.provider.getParsers(tableBuilder.tableDescription, setup).second
 
-        val action = this.intercept(TrackingTableRenamingArgs(ctx, tableBuilder.tableDescription, trackingTableName, oldTrackingTableName), progress)
+        val action = this.intercept(
+            TrackingTableRenamingArgs(
+                ctx,
+                tableBuilder.tableDescription,
+                trackingTableName,
+                oldTrackingTableName
+            ), progress
+        )
 
         if (action.cancel)
             return false
@@ -986,7 +1046,14 @@ abstract class BaseOrchestrator(
 
         tableBuilder.renameTrackingTable(oldTrackingTableName)
 
-        this.intercept(TrackingTableRenamedArgs(ctx, tableBuilder.tableDescription, trackingTableName, oldTrackingTableName), progress)
+        this.intercept(
+            TrackingTableRenamedArgs(
+                ctx,
+                tableBuilder.tableDescription,
+                trackingTableName,
+                oldTrackingTableName
+            ), progress
+        )
 
         return true
     }
@@ -2061,7 +2128,7 @@ abstract class BaseOrchestrator(
 
         }
 
-       this.intercept(MetadataCleanedArgs(context, databaseMetadatasCleaned))
+        this.intercept(MetadataCleanedArgs(context, databaseMetadatasCleaned))
         return databaseMetadatasCleaned
     }
 
@@ -2402,7 +2469,8 @@ abstract class BaseOrchestrator(
         var hasDeleteClientScopeTable = false
         var hasDeleteServerScopeTable = false
         if (provision.contains(SyncProvision.ClientScope)) {
-            val exists = internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
+            val exists =
+                internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
             if (exists) {
                 this.internalDropScopeInfoTable(ctx, scopeBuilder, progress)
@@ -2432,7 +2500,8 @@ abstract class BaseOrchestrator(
             clientScopeInfo.schema = null
             clientScopeInfo.setup = null
 
-            val exists = internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
+            val exists =
+                internalExistsScopeInfoTable(ctx, DbScopeType.Client, scopeBuilder, progress)
 
             if (exists)
                 this.internalSaveScope(ctx, clientScopeInfo, scopeBuilder, progress)
@@ -2562,8 +2631,20 @@ abstract class BaseOrchestrator(
         ctx: SyncContext, setup: SyncSetup, tableBuilder: DbTableBuilder,
         progress: Progress<ProgressArgs>?
     ): Boolean {
-        tableBuilder.dropTable()
         val (tableName, _) = this.provider.getParsers(tableBuilder.tableDescription, setup)
+        val action = this.intercept(
+            TableDroppingArgs(ctx, tableBuilder.tableDescription, tableName),
+            progress
+        )
+
+        if (action.cancel)
+            return false
+
+        this.intercept(DbCommandArgs(ctx, "internalDropTable"), progress)
+
+        tableBuilder.dropTable()
+
+        this.intercept(TableDroppedArgs(ctx, tableBuilder.tableDescription, tableName), progress)
         return true
     }
 
@@ -2582,8 +2663,8 @@ abstract class BaseOrchestrator(
      * Internal drop storedProcedures routine
      */
     internal fun internalDropStoredProcedures(
-        ctx:SyncContext,
-        tableBuilder:DbTableBuilder,
+        ctx: SyncContext,
+        tableBuilder: DbTableBuilder,
         progress: Progress<ProgressArgs>?
     ): Boolean {
         // check bulk before
@@ -2591,12 +2672,22 @@ abstract class BaseOrchestrator(
 
 
         if (this.provider.supportBulkOperations) {
-            val orderedList = arrayOf(DbStoredProcedureType.BulkDeleteRows, DbStoredProcedureType.BulkUpdateRows, DbStoredProcedureType.BulkTableType )
+            val orderedList = arrayOf(
+                DbStoredProcedureType.BulkDeleteRows,
+                DbStoredProcedureType.BulkUpdateRows,
+                DbStoredProcedureType.BulkTableType
+            )
 
-            orderedList.forEach { storedProcedureType:DbStoredProcedureType ->
-                val exists = internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+            orderedList.forEach { storedProcedureType: DbStoredProcedureType ->
+                val exists =
+                    internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
                 if (exists) {
-                    val dropped = internalDropStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+                    val dropped = internalDropStoredProcedure(
+                        ctx,
+                        tableBuilder,
+                        storedProcedureType,
+                        progress
+                    )
 
                     // If at least one stored proc has been dropped, we're good to return true;
                     if (dropped)
@@ -2610,18 +2701,21 @@ abstract class BaseOrchestrator(
             .filter { sp -> sp != DbStoredProcedureType.BulkDeleteRows && sp != DbStoredProcedureType.BulkTableType && sp != DbStoredProcedureType.BulkUpdateRows }
 
 
-        listStoredProcedureType.forEach { storedProcedureType:DbStoredProcedureType ->
+        listStoredProcedureType.forEach { storedProcedureType: DbStoredProcedureType ->
             // check with filter
             if ((storedProcedureType == DbStoredProcedureType.SelectChangesWithFilters || storedProcedureType == DbStoredProcedureType.SelectInitializedChangesWithFilters)
-                && tableBuilder.tableDescription.getFilter() == null)
+                && tableBuilder.tableDescription.getFilter() == null
+            )
                 return@forEach
 
-            val exists = internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+            val exists =
+                internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
 
             if (!exists)
                 return@forEach
 
-            val dropped = internalDropStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+            val dropped =
+                internalDropStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
 
             // If at least one stored proc has been dropped, we're good to return true;
             if (dropped)
@@ -2648,7 +2742,8 @@ abstract class BaseOrchestrator(
 
         val filter = tableBuilder.tableDescription.getFilter()
 
-        val action = StoredProcedureCreatingArgs(ctx, tableBuilder.tableDescription, storedProcedureType)
+        val action =
+            StoredProcedureCreatingArgs(ctx, tableBuilder.tableDescription, storedProcedureType)
         this.intercept(action, progress)
 
         if (action.cancel)
@@ -2657,7 +2752,13 @@ abstract class BaseOrchestrator(
         this.intercept(DbCommandArgs(ctx, "internalCreateStoredProcedure"), progress)
 
         tableBuilder.createStoredProcedure(storedProcedureType, filter)
-        this.intercept(StoredProcedureCreatedArgs(ctx, tableBuilder.tableDescription, storedProcedureType), progress)
+        this.intercept(
+            StoredProcedureCreatedArgs(
+                ctx,
+                tableBuilder.tableDescription,
+                storedProcedureType
+            ), progress
+        )
 
         return true
     }
@@ -2679,7 +2780,8 @@ abstract class BaseOrchestrator(
         // we need to drop bulk in order to be sure bulk type is delete after all
         if (overwrite) {
             listStoredProcedureType.forEach { storedProcedureType ->
-                val exists = internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+                val exists =
+                    internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
 
                 if (exists)
                     internalDropStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
@@ -2688,15 +2790,18 @@ abstract class BaseOrchestrator(
         }
 
         // Order Desc is the correct order to Create
-        listStoredProcedureType = DbStoredProcedureType.values().sortedByDescending { sp -> sp.ordinal }
+        listStoredProcedureType =
+            DbStoredProcedureType.values().sortedByDescending { sp -> sp.ordinal }
 
         listStoredProcedureType.forEach { storedProcedureType ->
             // check with filter
             if ((storedProcedureType == DbStoredProcedureType.SelectChangesWithFilters || storedProcedureType == DbStoredProcedureType.SelectInitializedChangesWithFilters)
-                && tableBuilder.tableDescription.getFilter() == null)
+                && tableBuilder.tableDescription.getFilter() == null
+            )
                 return@forEach
 
-            val exists = internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+            val exists =
+                internalExistsStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
 
             // Drop storedProcedure if already exists
             if (exists && overwrite)
@@ -2707,7 +2812,8 @@ abstract class BaseOrchestrator(
             if (!shouldCreate)
                 return@forEach
 
-            val created = internalCreateStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
+            val created =
+                internalCreateStoredProcedure(ctx, tableBuilder, storedProcedureType, progress)
 
             // If at least one stored proc has been created, we're good to return true;
             if (created)
@@ -2736,7 +2842,8 @@ abstract class BaseOrchestrator(
 
         val tableName = this.provider.getParsers(tableBuilder.tableDescription, setup).first
 
-        val action = ColumnCreatingArgs(ctx, addedColumnName, tableBuilder.tableDescription, tableName)
+        val action =
+            ColumnCreatingArgs(ctx, addedColumnName, tableBuilder.tableDescription, tableName)
 
         this.intercept(action, progress)
 
@@ -2747,7 +2854,14 @@ abstract class BaseOrchestrator(
 
         tableBuilder.addColumn(addedColumnName)
 
-        this.intercept(ColumnCreatedArgs(ctx, addedColumnName, tableBuilder.tableDescription, tableName), progress)
+        this.intercept(
+            ColumnCreatedArgs(
+                ctx,
+                addedColumnName,
+                tableBuilder.tableDescription,
+                tableName
+            ), progress
+        )
 
         return true
     }

@@ -6,24 +6,21 @@ import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncTable
 
-class TableCreatingArgs(
+class TableDroppedArgs(
     context: SyncContext,
     val table: SyncTable,
     val tableName: ParserName
-): ProgressArgs(context) {
+) : ProgressArgs(context) {
     var cancel: Boolean = false
 
     override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
-
-    override val message: String
-        get() = "[${table.getFullName()}] Table Creating."
-
-    override val eventId: Int
-        get() = 12100
+    override val message: String = "[${table.getFullName()}] Table Dropped."
+    override val eventId: Int = 12250
 }
 
+
 /**
- * Intercept the provider when a table is creating
+ *  Intercept the provider when a table is dropped
  */
-fun BaseOrchestrator.onTableCreating(action: (TableCreatingArgs) -> Unit) =
+fun BaseOrchestrator.onTableDropped(action: (TableDroppedArgs) -> Unit) =
     this.setInterceptor(action)

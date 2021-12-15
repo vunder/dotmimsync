@@ -3,9 +3,7 @@ package com.mimetis.dotmim.sync.orchestrators
 import com.mimetis.dotmim.sync.*
 import com.mimetis.dotmim.sync.SyncVersion.major
 import com.mimetis.dotmim.sync.SyncVersion.toVersionInt
-import com.mimetis.dotmim.sync.args.ProgressArgs
-import com.mimetis.dotmim.sync.args.SessionBeginArgs
-import com.mimetis.dotmim.sync.args.SessionEndArgs
+import com.mimetis.dotmim.sync.args.*
 import com.mimetis.dotmim.sync.batch.BatchInfo
 import com.mimetis.dotmim.sync.builders.DbScopeBuilder
 import com.mimetis.dotmim.sync.builders.DbScopeType
@@ -256,10 +254,11 @@ class LocalOrchestrator(
         // Get context or create a new one
         val ctx = this.getContext()
 
-        // store value
-        val isNew = clientScopeInfo.isNewScope
+        ctx.syncStage = SyncStage.SnapshotApplying;
+        this.intercept(SnapshotApplyingArgs(ctx), progress)
 
-        ctx.syncStage = SyncStage.SnapshotApplying
+        if (clientScopeInfo.schema == null)
+            throw NullPointerException("Argument clientScopeInfo.schema is null")
 
         // Applying changes and getting the new client scope info
         val (changesApplied, newClientScopeInfo) = this.applyChanges(
@@ -274,8 +273,12 @@ class LocalOrchestrator(
             progress
         )
 
+        this.intercept(SnapshotAppliedArgs(ctx, changesApplied), progress)
+
         // re-apply scope is new flag
-        newClientScopeInfo.isNewScope = isNew
+        // to be sure we are calling the Initialize method, even for the delta
+        // in that particular case, we want the delta rows coming from the current scope
+        newClientScopeInfo.isNewScope = true
 
         return Pair(changesApplied, newClientScopeInfo)
     }

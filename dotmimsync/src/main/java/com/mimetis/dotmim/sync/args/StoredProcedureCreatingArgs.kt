@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.builders.DbStoredProcedureType
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncTable
 
@@ -11,6 +12,8 @@ class StoredProcedureCreatingArgs(
     val storedProcedureType: DbStoredProcedureType
 ) : ProgressArgs(context) {
     var cancel: Boolean = false
+
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
 
     override val message: String
         get() = "[${this.table.getFullName()}] Stored Procedure [${this.storedProcedureType}] Creating."

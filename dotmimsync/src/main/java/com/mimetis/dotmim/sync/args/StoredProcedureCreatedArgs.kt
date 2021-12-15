@@ -11,8 +11,7 @@ class StoredProcedureCreatedArgs(
     val table: SyncTable,
     val storedProcedureType: DbStoredProcedureType
 ) : ProgressArgs(context) {
-    override val progressLevel: SyncProgressLevel
-        get() = SyncProgressLevel.Trace
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
 
     override val message: String
         get() = "[${this.table.getFullName()}] Stored Procedure [${this.storedProcedureType}] Created."
