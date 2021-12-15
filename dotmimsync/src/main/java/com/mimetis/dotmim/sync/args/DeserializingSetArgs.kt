@@ -1,6 +1,7 @@
 package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.ContainerSet
 import java.io.File
@@ -27,11 +28,9 @@ class DeserializingSetArgs(
      */
     val directoryPath: String
 ) : ProgressArgs(context) {
-    override val message: String =
-        "[$fileName] Deserializing Set."
-
-    override val eventId: Int =
-        8050
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Debug
+    override val message: String = "[$fileName] Deserializing Set."
+    override val eventId: Int = 8050
 
     override val source: String =
         if (directoryPath.isBlank()) "" else File(directoryPath).name
