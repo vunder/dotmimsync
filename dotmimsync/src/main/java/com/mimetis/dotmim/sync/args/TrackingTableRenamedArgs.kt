@@ -12,14 +12,9 @@ class TrackingTableRenamedArgs(
     val trackingTableName: ParserName,
     val oldTrackingTableName: ParserName
 ) : ProgressArgs(context) {
-    override val progressLevel: SyncProgressLevel
-        get() = SyncProgressLevel.Trace
-
-    override val message: String
-        get() = "[${this.trackingTableName}] Tracking Table Renamed."
-
-    override val eventId: Int
-        get() = 14250
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
+    override val message: String = "[${this.trackingTableName}] Tracking Table Renamed."
+    override val eventId: Int = 14250
 }
 
 /**

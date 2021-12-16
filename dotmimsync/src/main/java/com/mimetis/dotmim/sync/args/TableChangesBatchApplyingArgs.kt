@@ -2,6 +2,8 @@ package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.DataRowState
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.batch.BatchPartInfo
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncTable
 
@@ -14,7 +16,7 @@ class TableChangesBatchApplyingArgs(
     /**
      * Gets the changes to be applied into the database
      */
-    val changes: SyncTable,
+    val batchPartInfo: BatchPartInfo,
 
     /**
      * Gets the RowState of the applied rows
@@ -23,8 +25,9 @@ class TableChangesBatchApplyingArgs(
 ) : ProgressArgs(context) {
     var cancel: Boolean = false
 
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Debug
     override val eventId: Int = 13100
-    override val message: String = "Applying [${changes.tableName}] Batch. State:$state."
+    override val message: String = "Applying [${batchPartInfo.fileName}] Batch file. State:$state."
 }
 
 /**

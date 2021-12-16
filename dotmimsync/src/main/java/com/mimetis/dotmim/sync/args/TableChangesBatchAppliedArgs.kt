@@ -1,6 +1,7 @@
 package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.messages.TableChangesApplied
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 
@@ -15,6 +16,7 @@ class TableChangesBatchAppliedArgs(
      */
     val tableChangesApplied: TableChangesApplied
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Debug
     override val message: String =
         "[${this.tableChangesApplied.tableName}] [${this.tableChangesApplied.state}] " +
                 "Applied:(${this.tableChangesApplied.applied}) Total:(${this.tableChangesApplied.totalAppliedCount}/${this.tableChangesApplied.totalRowsCount.toDouble()})."

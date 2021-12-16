@@ -13,14 +13,9 @@ class TrackingTableCreatedArgs(
 ) : ProgressArgs(context) {
     var cancel: Boolean = false
 
-    override val progressLevel: SyncProgressLevel
-        get() = SyncProgressLevel.Trace
-
-    override val message: String
-        get() = "[${this.trackingTableName}] tracking table created."
-
-    override val eventId: Int
-        get() = 14050
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
+    override val message: String = "[${this.trackingTableName}] tracking table created."
+    override val eventId: Int = 14050
 }
 
 /**

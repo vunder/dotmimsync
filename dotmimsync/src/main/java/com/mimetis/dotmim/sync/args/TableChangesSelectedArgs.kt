@@ -1,6 +1,8 @@
 package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.batch.BatchPartInfo
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.messages.TableChangesSelected
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncTable
@@ -14,13 +16,14 @@ class TableChangesSelectedArgs(
      * Gets the SyncTable instances containing all changes selected.
      * If you get this instance from a call from GetEstimatedChangesCount, this property is always null
      */
-    val changes: SyncTable,
+    val batchPartInfos: List<BatchPartInfo>,
 
     /**
      * Gets the incremental summary of changes selected
      */
     val tableChangesSelected: TableChangesSelected
 ) : ProgressArgs(context) {
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Debug
     override val message: String =
         "[${this.tableChangesSelected.tableName}] [Total] Upserts:${this.tableChangesSelected.upserts}. Deletes:${this.tableChangesSelected.deletes}. Total:${this.tableChangesSelected.totalChanges}."
 

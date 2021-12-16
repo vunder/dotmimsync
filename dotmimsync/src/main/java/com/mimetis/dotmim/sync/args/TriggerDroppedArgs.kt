@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.builders.DbTriggerType
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncTable
 
@@ -10,11 +11,9 @@ class TriggerDroppedArgs(
     val table: SyncTable,
     val triggerType: DbTriggerType
 ) : ProgressArgs(context) {
-    override val message: String
-        get() = "[${table.getFullName()}] Trigger [${this.triggerType}] Dropped."
-
-    override val eventId: Int
-        get() = 15150
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
+    override val message: String = "[${table.getFullName()}] Trigger [${this.triggerType}] Dropped."
+    override val eventId: Int = 15150
 }
 
 /**

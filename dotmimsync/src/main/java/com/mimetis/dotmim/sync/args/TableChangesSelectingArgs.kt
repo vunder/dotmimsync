@@ -10,23 +10,17 @@ import com.mimetis.dotmim.sync.set.SyncTable
  */
 class TableChangesSelectingArgs(
     context: SyncContext,
-    schemaTable: SyncTable
-):ProgressArgs(context) {
-    override val progressLevel: SyncProgressLevel
-        get() = SyncProgressLevel.Debug
-
-    override val message: String
-        get() = "Getting Changes [${table.getFullName()}]."
-
-    override val eventId: Int
-        get() = 13000
 
     /**
      * Gets the table from where the changes are going to be selected.
      */
-    val table: SyncTable = schemaTable
-
+    val table: SyncTable
+) : ProgressArgs(context) {
     var cancel: Boolean = false
+
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Debug
+    override val message: String = "[${table.getFullName()}] Getting Changes."
+    override val eventId: Int = 13000
 }
 
 /**

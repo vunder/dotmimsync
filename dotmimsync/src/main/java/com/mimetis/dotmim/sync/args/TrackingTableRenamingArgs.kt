@@ -14,14 +14,9 @@ class TrackingTableRenamingArgs(
 ) : ProgressArgs(context) {
     var cancel: Boolean = false
 
-    override val progressLevel: SyncProgressLevel
-        get() = SyncProgressLevel.Trace
-
-    override val message: String
-        get() = "[${this.trackingTableName}] Tracking Table Renaming."
-
-    override val eventId: Int
-        get() = 14200
+    override val progressLevel: SyncProgressLevel = SyncProgressLevel.Trace
+    override val message: String = "[${this.trackingTableName}] Tracking Table Renaming."
+    override val eventId: Int = 14200
 }
 
 /**

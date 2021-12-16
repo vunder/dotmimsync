@@ -1,6 +1,7 @@
 package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.enumerations.SyncProgressLevel
 import com.mimetis.dotmim.sync.messages.TableChangesApplied
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 
@@ -9,14 +10,11 @@ import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
  */
 class TableChangesAppliedArgs(
     context: SyncContext,
-
     val tableChangesApplied: TableChangesApplied
 ) : ProgressArgs(context) {
-    override val message: String
-        get() = "[${tableChangesApplied.tableName}] Changes ${tableChangesApplied.state} Applied:${tableChangesApplied.applied}. Resolved Conflicts:${tableChangesApplied.resolvedConflicts}."
-
-    override val eventId: Int
-        get() = 13150
+    override val progressLevel: SyncProgressLevel = if (tableChangesApplied.applied > 0) SyncProgressLevel.Information else SyncProgressLevel.Debug
+    override val message: String = "[${tableChangesApplied.tableName}] Changes ${tableChangesApplied.state} Applied:${tableChangesApplied.applied}. Resolved Conflicts:${tableChangesApplied.resolvedConflicts}."
+    override val eventId: Int = 13150
 }
 
 /**
