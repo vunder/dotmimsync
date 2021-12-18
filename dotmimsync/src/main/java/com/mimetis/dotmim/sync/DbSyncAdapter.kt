@@ -62,12 +62,10 @@ abstract class DbSyncAdapter(
     internal var applyType: DataRowState = DataRowState.Detached
 
     companion object {
-        internal const val BATCH_SIZE = 10000
-
         /**
          * Create a change table with scope columns and tombstone column
          */
-        fun createChangesTable(syncTable: SyncTable, owner: SyncSet): SyncTable {
+        fun createChangesTable(syncTable: SyncTable, owner: SyncSet? = null): SyncTable {
             if (syncTable.schema == null)
                 throw Exception("ArgumentException: Schema can't be null when creating a changes table")
 
@@ -87,6 +85,10 @@ abstract class DbSyncAdapter(
 
             for (c in orderedNames)
                 changesTable.columns?.add(c.clone())
+
+            var owner = owner
+            if (owner == null)
+                owner = SyncSet()
 
             owner.tables.add(changesTable)
 

@@ -5,7 +5,6 @@ import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 
 abstract class CoreProvider {
-    abstract val supportBulkOperations: Boolean
     abstract fun getScopeBuilder(scopeInfoTableName: String): DbScopeBuilder
     abstract fun getDatabaseBuilder(): DbBuilder
     abstract fun getTableBuilder(tableDescription: SyncTable, setup: SyncSetup): DbTableBuilder
@@ -17,4 +16,14 @@ abstract class CoreProvider {
      * Get naming tables
      */
     abstract fun getParsers(tableDescription: SyncTable, setup: SyncSetup): Pair<ParserName, ParserName>
+
+    /**
+     * BulkBatchMaxLinesCount
+     */
+    open var bulkBatchMaxLinesCount: Int = 10000
+
+    /**
+     * Gets or Sets if the provider supports multi results sets on the same connection
+     */
+    open var SupportsMultipleActiveResultSets: Boolean = false
 }

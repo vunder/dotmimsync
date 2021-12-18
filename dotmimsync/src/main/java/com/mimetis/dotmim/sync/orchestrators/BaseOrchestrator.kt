@@ -1092,7 +1092,8 @@ abstract class BaseOrchestrator(
     private fun internalCreateTrigger(
         ctx: SyncContext,
         tableBuilder: DbTableBuilder,
-        triggerType: DbTriggerType
+        triggerType: DbTriggerType,
+        progress: Progress<ProgressArgs>?
     ): Boolean {
         if (tableBuilder.tableDescription.columns!!.isEmpty())
             throw  MissingsColumnException(tableBuilder.tableDescription.getFullName())
@@ -1100,7 +1101,16 @@ abstract class BaseOrchestrator(
         if (tableBuilder.tableDescription.primaryKeys.isEmpty())
             throw  MissingPrimaryKeyException(tableBuilder.tableDescription.getFullName())
 
+        val action = this.intercept(TriggerCreatingArgs(ctx, tableBuilder.tableDescription, triggerType), progress)
+
+        if (action.cancel)
+            return false
+
+        this.intercept(DbCommandArgs(ctx, "internalCreateTrigger"), progress)
+
         tableBuilder.createTrigger(triggerType)
+
+        this.intercept(TriggerCreatedArgs(ctx, tableBuilder.tableDescription, triggerType), progress)
 
         return true
     }

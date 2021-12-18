@@ -51,16 +51,29 @@ class ParserName private constructor() {
         return this
     }
 
-    private constructor(table: SyncTable, leftQuote: String? = null, rightQuote: String? = null) : this() {
-        val input = if (table.schemaName.isBlank()) table.tableName else "${table.schemaName}.${table.tableName}"
+    private constructor(
+        table: SyncTable,
+        leftQuote: String? = null,
+        rightQuote: String? = null
+    ) : this() {
+        val input =
+            if (table.schemaName.isBlank()) table.tableName else "${table.schemaName}.${table.tableName}"
         parseString(input, leftQuote, rightQuote)
     }
 
-    private constructor(column: SyncColumn, leftQuote: String? = null, rightQuote: String? = null) : this() {
+    private constructor(
+        column: SyncColumn,
+        leftQuote: String? = null,
+        rightQuote: String? = null
+    ) : this() {
         parseString(column.columnName, leftQuote, rightQuote)
     }
 
-    private constructor(input: String, leftQuote: String? = null, rightQuote: String? = null) : this() {
+    private constructor(
+        input: String,
+        leftQuote: String? = null,
+        rightQuote: String? = null
+    ) : this() {
         parseString(input, leftQuote, rightQuote)
     }
 
@@ -97,7 +110,10 @@ class ParserName private constructor() {
         }
 
         var name = if (withQuotes) parsedName.quotedObjectName else objectName
-        name = if (withNormalized) name.replace(" ", "_").replace(".", "_") else name
+        name = if (withNormalized)
+            name.replace(" ", "_").replace(".", "_").replace("-", "_")
+        else
+            name
         builder.append(name)
 
         // now we have the correct string, reset options for the next time we call the same instance
@@ -111,12 +127,12 @@ class ParserName private constructor() {
 
     companion object {
         fun parse(syncTable: SyncTable, leftQuote: String? = null, rightQuote: String? = null) =
-                ParserName(syncTable, leftQuote, rightQuote)
+            ParserName(syncTable, leftQuote, rightQuote)
 
         fun parse(syncColumn: SyncColumn, leftQuote: String? = null, rightQuote: String? = null) =
-                ParserName(syncColumn, leftQuote, rightQuote)
+            ParserName(syncColumn, leftQuote, rightQuote)
 
         fun parse(input: String, leftQuote: String? = null, rightQuote: String? = null) =
-                ParserName(input, leftQuote, rightQuote)
+            ParserName(input, leftQuote, rightQuote)
     }
 }

@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * Defines logging severity levels.
  */
 @Serializable(with = SyncProgressLevelSerializer::class)
-enum class SyncProgressLevel(override val value: Int):EnumWithValue {
+enum class SyncProgressLevel(override val value: Int) : EnumWithValue {
     /**
      * Progress that contain the most detailed messages and the Sql statement executed
      * These messages may contain sensitive
@@ -57,4 +57,4 @@ enum class SyncProgressLevel(override val value: Int):EnumWithValue {
     None(6)
 }
 
-class SyncProgressLevelSerializer : EnumByValueSerializer<SyncStage>()
+class SyncProgressLevelSerializer : EnumByValueSerializer<SyncProgressLevel>()

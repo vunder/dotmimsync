@@ -9,8 +9,9 @@ enum class DbStoredProcedureType {
     UpdateRow,
     DeleteRow,
     DeleteMetadata,
-    BulkTableType,
+    BulkInitRows,
     BulkUpdateRows,
     BulkDeleteRows,
-    Reset
+    Reset,
+    BulkTableType
 }
