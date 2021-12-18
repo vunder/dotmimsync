@@ -41,7 +41,7 @@ class WebClientOrchestrator(
 
         // Raise progress for sending request and waiting server response
         val sendingRequestArgs = HttpGettingSchemaRequestArgs(ctx, this.getServiceHost())
-        this.intercept(sendingRequestArgs)
+        this.intercept(sendingRequestArgs, progress)
         this.reportProgress(ctx, progress, sendingRequestArgs)
 
         val httpMessage = HttpMessageEnsureScopesRequest(ctx)
@@ -71,7 +71,7 @@ class WebClientOrchestrator(
             ensureScopesResponse.syncContext,
             this.getServiceHost()
         )
-        this.intercept(args)
+        this.intercept(args, progress)
 
         // Return scopes and new shema
         return ensureScopesResponse.serverScopeInfo
@@ -89,7 +89,7 @@ class WebClientOrchestrator(
 
         // Raise progress for sending request and waiting server response
         val sendingRequestArgs = HttpGettingScopeRequestArgs(ctx, this.getServiceHost())
-        this.intercept(sendingRequestArgs)
+        this.intercept(sendingRequestArgs, progress)
         this.reportProgress(ctx, progress, sendingRequestArgs)
 
         val args = HttpMessageEnsureScopesRequest(ctx)
@@ -153,7 +153,7 @@ class WebClientOrchestrator(
             serverBatchInfo,
             this.getServiceHost()
         )
-        this.intercept(args1)
+        this.intercept(args1, progress)
         this.reportProgress(ctx, progress, args1)
 
         serverBatchInfo.batchPartsInfo?.forEach { bpi ->
@@ -166,7 +166,7 @@ class WebClientOrchestrator(
 //            val step3 = HttpStep.GetMoreChanges
 
             val args2 = HttpGettingServerChangesRequestArgs(bpi.index, serverBatchInfo.batchPartsInfo!!.size, summaryResponseContent.syncContext, this.getServiceHost())
-            this.intercept(args2)
+            this.intercept(args2, progress)
 
             val response = service.moreChanges(authHeader, changesToSend3, converter)
 
@@ -183,7 +183,7 @@ class WebClientOrchestrator(
                 summaryResponseContent.syncContext,
                 this.getServiceHost()
             )
-            this.intercept(args3)
+            this.intercept(args3, progress)
             this.reportProgress(ctx, progress, args3)
         }
 
@@ -197,7 +197,7 @@ class WebClientOrchestrator(
             utcNow(),
             this.getServiceHost()
         )
-        this.intercept(args4)
+        this.intercept(args4, progress)
         this.reportProgress(ctx, progress, args4)
 
         return Triple(
@@ -277,7 +277,7 @@ class WebClientOrchestrator(
                 inMemoryRowsCount,
                 this.getServiceHost()
             )
-            this.intercept(args2)
+            this.intercept(args2, progress)
             this.reportProgress(ctx, progress, args2)
 
             httpMessageContent = service.sendChanges(authHeader, changesToSend, this.converter)
@@ -313,7 +313,7 @@ class WebClientOrchestrator(
                     clientBatchInfo.rowsCount,
                     this.getServiceHost()
                 )
-                this.intercept(args2)
+                this.intercept(args2, progress)
                 this.reportProgress(ctx, progress, args2)
 
                 // serialize message
@@ -384,7 +384,7 @@ class WebClientOrchestrator(
                 summaryResponseContent.syncContext,
                 this.getServiceHost()
             )
-            this.intercept(args3)
+            this.intercept(args3, progress)
             this.reportProgress(ctx, progress, args3)
 
             return Tuple(
@@ -421,7 +421,7 @@ class WebClientOrchestrator(
             serverBatchInfo,
             this.getServiceHost()
         )
-        this.intercept(args1)
+        this.intercept(args1, progress)
         this.reportProgress(ctx, progress, args1)
 
         val dl: (suspend (BatchPartInfo) -> Unit) = { bpi: BatchPartInfo ->
@@ -433,7 +433,7 @@ class WebClientOrchestrator(
                 summaryResponseContent.syncContext,
                 this.getServiceHost()
             )
-            this.intercept(args2)
+            this.intercept(args2, progress)
 
             // Raise get changes request
             ctx.progressPercentage =
@@ -454,7 +454,7 @@ class WebClientOrchestrator(
                 summaryResponseContent.syncContext,
                 this.getServiceHost()
             )
-            this.intercept(args3)
+            this.intercept(args3, progress)
             this.reportProgress(ctx, progress, args3)
         }
 
@@ -485,7 +485,7 @@ class WebClientOrchestrator(
             utcNow(),
             this.getServiceHost()
         )
-        this.intercept(args4)
+        this.intercept(args4, progress)
         this.reportProgress(ctx, progress, args4)
 
         return Tuple(

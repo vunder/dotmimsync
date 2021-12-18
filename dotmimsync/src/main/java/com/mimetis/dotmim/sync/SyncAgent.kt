@@ -130,7 +130,7 @@ class SyncAgent(
 
             // Before call the changes from localorchestrator, check if we are outdated
             if (context.syncType != SyncType.Reinitialize && context.syncType != SyncType.ReinitializeWithUpload) {
-                val isOutDated = this.localOrchestrator.isOutDated(clientScopeInfo, serverScopeInfo)
+                val isOutDated = this.localOrchestrator.isOutDated(clientScopeInfo, serverScopeInfo, progress)
 
                 // if client does not change SyncType to Reinitialize / ReinitializeWithUpload on SyncInterceptor, we raise an error
                 // otherwise, we are outdated, but we can continue, because we have a new mode.

@@ -33,7 +33,7 @@ class LocalOrchestrator(
 
         // Progress & interceptor
         val sessionArgs = SessionBeginArgs(ctx)
-        this.intercept(sessionArgs)
+        this.intercept(sessionArgs, progress)
         this.reportProgress(ctx, progress, sessionArgs)
     }
 
@@ -49,7 +49,7 @@ class LocalOrchestrator(
 
         // Progress & interceptor
         val sessionArgs = SessionEndArgs(ctx)
-        this.intercept(sessionArgs)
+        this.intercept(sessionArgs, progress)
         this.reportProgress(ctx, progress, sessionArgs)
     }
 
@@ -180,7 +180,7 @@ class LocalOrchestrator(
 
         // JUST before the whole process, get the timestamp, to be sure to
         // get rows inserted / updated elsewhere since the sync is not over
-        clientTimestamp = this.internalGetLocalTimestamp()
+        clientTimestamp = this.internalGetLocalTimestamp(progress)
 
         // Creating the message
         val message = MessageGetChangesBatch(

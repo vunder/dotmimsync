@@ -47,5 +47,7 @@ class MessageGetChangesBatch(
         /**
          * Gets or Sets the batch directory used to serialize the datas
          */
-        var batchDirectory: String
+        var batchDirectory: String,
+
+        var supportsMultiActiveResultSets: Boolean
 )

@@ -70,7 +70,7 @@ abstract class BaseOrchestrator(
     @Suppress("EXPERIMENTAL_API_USAGE_ERROR")
     internal inline fun <reified T : ProgressArgs> intercept(
         args: T,
-        progress: Progress<ProgressArgs>? = null
+        progress: Progress<ProgressArgs>?
     ): T {
         val interceptor = this.interceptors.getInterceptor<T>()
         interceptor.run(args)
@@ -120,7 +120,7 @@ abstract class BaseOrchestrator(
         if (schema?.tables == null || !schema.hasTables)
             throw MissingTablesException()
 
-        this.intercept(ProvisioningArgs(ctx, provision, schema))
+        this.intercept(ProvisioningArgs(ctx, provision, schema), progress)
 
         val builder = this.provider.getDatabaseBuilder()
 
@@ -199,7 +199,7 @@ abstract class BaseOrchestrator(
         }
 
         val args = ProvisionedArgs(ctx, provision, schema)
-        this.intercept(args)
+        this.intercept(args, progress)
         this.reportProgress(ctx, progress, args)
 
         return schema
@@ -208,7 +208,10 @@ abstract class BaseOrchestrator(
     /**
      * Check if the orchestrator database is outdated
      */
-    fun isOutDated(clientScopeInfo: ScopeInfo, serverScopeInfo: ServerScopeInfo): Boolean {
+    fun isOutDated(
+        clientScopeInfo: ScopeInfo,
+        serverScopeInfo: ServerScopeInfo,
+        progress: Progress<ProgressArgs>?): Boolean {
         if (this.startTime == null)
             this.startTime = utcNow()
 
@@ -233,7 +236,7 @@ abstract class BaseOrchestrator(
             val outdatedArgs = OutdatedArgs(ctx, clientScopeInfo, serverScopeInfo)
 
             // Interceptor
-            this.intercept(outdatedArgs)
+            this.intercept(outdatedArgs, progress)
 
             if (outdatedArgs.action != OutdatedAction.Rollback)
                 ctx.syncType =
@@ -307,7 +310,7 @@ abstract class BaseOrchestrator(
         if (setup == null || setup.tables.size <= 0)
             throw MissingTablesException()
 
-        this.intercept(SchemaLoadingArgs(context, setup))
+        this.intercept(SchemaLoadingArgs(context, setup), progress)
 
         // Create the schema
         val schema = SyncSet()
@@ -333,7 +336,7 @@ abstract class BaseOrchestrator(
         schema.ensureSchema()
 
         val schemaArgs = SchemaLoadedArgs(context, schema)
-        this.intercept(schemaArgs)
+        this.intercept(schemaArgs, progress)
         this.reportProgress(context, progress, schemaArgs)
 
         return schema
@@ -357,7 +360,7 @@ abstract class BaseOrchestrator(
 
         // Launch InterceptAsync on Migrating
         val migratingArgs =
-            this.intercept(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults))
+            this.intercept(MigratingArgs(context, schema, oldSetup, newSetup, migrationResults), progress)
         // New logic to be able to cancel any migration
         if (migratingArgs.cancel)
             return context
@@ -497,7 +500,7 @@ abstract class BaseOrchestrator(
 
         // InterceptAsync Migrated
         val args = MigratedArgs(context, schema, newSetup, migrationResults)
-        this.intercept(args)
+        this.intercept(args, progress)
         this.reportProgress(context, progress, args)
 
         return context
@@ -924,14 +927,14 @@ abstract class BaseOrchestrator(
         val tableName = this.provider.getParsers(tableBuilder.tableDescription, setup).first
         val action = TableCreatingArgs(ctx, tableBuilder.tableDescription, tableName)
 
-        this.intercept(action)
+        this.intercept(action, progress)
 
         if (action.cancel)
             return false
 
         tableBuilder.createTable()
 
-        this.intercept(TableCreatedArgs(ctx, tableBuilder.tableDescription, tableName))
+        this.intercept(TableCreatedArgs(ctx, tableBuilder.tableDescription, tableName), progress)
 
         return true
     }
@@ -1080,7 +1083,7 @@ abstract class BaseOrchestrator(
             if (!shouldCreate)
                 continue
 
-            val hasBeenCreated = internalCreateTrigger(ctx, tableBuilder, triggerType)
+            val hasBeenCreated = internalCreateTrigger(ctx, tableBuilder, triggerType, progress)
 
             if (hasBeenCreated)
                 hasCreatedAtLeastOneTrigger = true
@@ -1142,9 +1145,9 @@ abstract class BaseOrchestrator(
         return hasDroppeAtLeastOneTrigger
     }
 
-    internal fun internalGetLocalTimestamp(): Long {
+    internal fun internalGetLocalTimestamp(progress: Progress<ProgressArgs>?): Long {
         val args = LocalTimestampLoadingArgs(this.getContext())
-        this.intercept(args)
+        this.intercept(args, progress)
         if (args.cancel)
             return 0L
 
@@ -1152,7 +1155,7 @@ abstract class BaseOrchestrator(
         val result = scopeBuilder.getLocalTimestamp()
 
         val loadedArgs = LocalTimestampLoadedArgs(this.getContext(), result)
-        this.intercept(args)
+        this.intercept(args, progress)
 
         return loadedArgs.localTimestamp
     }
@@ -1246,7 +1249,7 @@ abstract class BaseOrchestrator(
         progress: Progress<ProgressArgs>?
     ): Pair<SyncContext, DatabaseChangesApplied> {
         // call interceptor
-        this.intercept(DatabaseChangesApplyingArgs(context, message))
+        this.intercept(DatabaseChangesApplyingArgs(context, message), progress)
 
         val changesApplied = DatabaseChangesApplied()
 
@@ -1339,7 +1342,7 @@ abstract class BaseOrchestrator(
         message.changes.clear(cleanFolder)
 
         val databaseChangesAppliedArgs = DatabaseChangesAppliedArgs(context, changesApplied)
-        this.intercept(databaseChangesAppliedArgs)
+        this.intercept(databaseChangesAppliedArgs, progress)
         this.reportProgress(context, progress, databaseChangesAppliedArgs)
 
         return Pair(context, changesApplied)
@@ -1469,7 +1472,7 @@ abstract class BaseOrchestrator(
         if (hasChanges) {
             // launch interceptor if any
             val args = TableChangesApplyingArgs(context, schemaTable, applyType)
-            this.intercept(args)
+            this.intercept(args, progress)
 
             if (args.cancel)
                 return
@@ -1510,7 +1513,8 @@ abstract class BaseOrchestrator(
                     usBulk,
                     schemaChangesTable,
                     message,
-                    applyType
+                    applyType,
+                    progress
                 )
 
                 // Any failure ?
@@ -1557,7 +1561,7 @@ abstract class BaseOrchestrator(
                 // Report the batch changes applied
                 // We don't report progress if we do not have applied any changes on the table, to limit verbosity of Progress
                 if (tableChangesBatchAppliedArgs.tableChangesApplied.applied > 0 || tableChangesBatchAppliedArgs.tableChangesApplied.failed > 0 || tableChangesBatchAppliedArgs.tableChangesApplied.resolvedConflicts > 0) {
-                    this.intercept(tableChangesBatchAppliedArgs)
+                    this.intercept(tableChangesBatchAppliedArgs, progress)
                     this.reportProgress(context, progress, tableChangesBatchAppliedArgs)
                 }
             }
@@ -1568,7 +1572,7 @@ abstract class BaseOrchestrator(
 
                 // We don't report progress if we do not have applied any changes on the table, to limit verbosity of Progress
                 if (tableChangesAppliedArgs.tableChangesApplied.applied > 0 || tableChangesAppliedArgs.tableChangesApplied.failed > 0 || tableChangesAppliedArgs.tableChangesApplied.resolvedConflicts > 0)
-                    this.intercept(tableChangesAppliedArgs)
+                    this.intercept(tableChangesAppliedArgs, progress)
             }
         }
     }
@@ -1581,7 +1585,8 @@ abstract class BaseOrchestrator(
         useBulkOperation: Boolean,
         changesTable: SyncTable,
         message: MessageApplyChanges,
-        applyType: DataRowState
+        applyType: DataRowState,
+        progress: Progress<ProgressArgs>?
     ): Pair<Int, Int> {
         // Conflicts occured when trying to apply rows
         val conflictRows = ArrayList<SyncRow>()
@@ -1602,7 +1607,7 @@ abstract class BaseOrchestrator(
 
         // Launch any interceptor if available
         val args = TableChangesBatchApplyingArgs(context, changesTable, applyType)
-        this.intercept(args)
+        this.intercept(args, progress)
 
         if (args.cancel)// || args.Command == null)
             return Pair(0, 0)
@@ -1700,7 +1705,8 @@ abstract class BaseOrchestrator(
                     conflictRow,
                     changesTable,
                     message.policy,
-                    fromScopeLocalTimeStamp
+                    fromScopeLocalTimeStamp,
+                    progress
                 )
 
             conflictsResolvedCount += conflictResolvedCount
@@ -1718,15 +1724,21 @@ abstract class BaseOrchestrator(
      * The int returned is the conflict count I need
      */
     private fun handleConflict(
-        localScopeId: UUID, senderScopeId: UUID?, syncAdapter: DbSyncAdapter,
-        context: SyncContext, conflictRow: SyncRow, schemaChangesTable: SyncTable,
-        policy: ConflictResolutionPolicy, lastTimestamp: Long?
+        localScopeId: UUID,
+        senderScopeId: UUID?,
+        syncAdapter: DbSyncAdapter,
+        context: SyncContext,
+        conflictRow: SyncRow,
+        schemaChangesTable: SyncTable,
+        policy: ConflictResolutionPolicy,
+        lastTimestamp: Long?,
+        progress: Progress<ProgressArgs>?
     ): Triple<Int, SyncRow?, Int> {
         var rowAppliedCount = 0
 
         var (conflictApplyAction, conflictType, localRow, finalRow, nullableSenderScopeId) = this.getConflictAction(
             context, localScopeId, syncAdapter, conflictRow, schemaChangesTable,
-            policy, senderScopeId
+            policy, senderScopeId, progress
         )
 
         // Conflict rollbacked by user
@@ -1876,7 +1888,8 @@ abstract class BaseOrchestrator(
     private fun getConflictAction(
         context: SyncContext, localScopeId: UUID?, syncAdapter: DbSyncAdapter,
         conflictRow: SyncRow, schemaChangesTable: SyncTable, policy: ConflictResolutionPolicy,
-        senderScopeId: UUID?
+        senderScopeId: UUID?,
+        progress: Progress<ProgressArgs>?
     ): Tuple<ApplyAction, ConflictType, SyncRow?, SyncRow?, UUID?> {
         // default action
         var resolution =
@@ -1914,7 +1927,7 @@ abstract class BaseOrchestrator(
 
             // Interceptor
             val arg = ApplyChangesFailedArgs(context, conflict, resolution, senderScopeId)
-            this.intercept(arg)
+            this.intercept(arg, progress)
 
             resolution = arg.resolution
             finalRow = if (arg.resolution == ConflictResolution.MergeRow) arg.finalRow else null
@@ -2114,7 +2127,7 @@ abstract class BaseOrchestrator(
         context: SyncContext, schema: SyncSet, setup: SyncSetup,
         timestampLimit: Long, progress: Progress<ProgressArgs>?
     ): DatabaseMetadatasCleaned {
-        this.intercept(MetadataCleaningArgs(context, this.setup, timestampLimit))
+        this.intercept(MetadataCleaningArgs(context, this.setup, timestampLimit), progress)
 
         val databaseMetadatasCleaned = DatabaseMetadatasCleaned(timestampLimit = timestampLimit)
 
@@ -2138,7 +2151,7 @@ abstract class BaseOrchestrator(
 
         }
 
-        this.intercept(MetadataCleanedArgs(context, databaseMetadatasCleaned))
+        this.intercept(MetadataCleanedArgs(context, databaseMetadatasCleaned), progress)
         return databaseMetadatasCleaned
     }
 
@@ -2164,7 +2177,7 @@ abstract class BaseOrchestrator(
         }
 
         // Call interceptor
-        intercept(DatabaseChangesSelectingArgs(context, message))
+        intercept(DatabaseChangesSelectingArgs(context, message), progress)
 
         // create local directory
         if (message.batchSize > 0 && message.batchDirectory.isNotBlank() && !File(message.batchDirectory).exists()) {
@@ -2209,7 +2222,7 @@ abstract class BaseOrchestrator(
 
             // launch interceptor if any
             val args = TableChangesSelectingArgs(context, syncTable)
-            intercept(args)
+            intercept(args, progress)
 
             if (!args.cancel) {
                 // Statistics
@@ -2268,7 +2281,7 @@ abstract class BaseOrchestrator(
                             changesSetTable,
                             tableChangesSelected
                         )
-                        this.intercept(batchTableChangesSelectedArgs)
+                        this.intercept(batchTableChangesSelectedArgs, progress)
 
                         // add changes to batchinfo
                         batchInfo.addChanges(changesSet, batchIndex, false, this)
@@ -2301,7 +2314,7 @@ abstract class BaseOrchestrator(
                 // even if no rows raise the interceptor
                 val tableChangesSelectedArgs =
                     TableChangesSelectedArgs(context, changesSetTable, tableChangesSelected)
-                this.intercept(tableChangesSelectedArgs)
+                this.intercept(tableChangesSelectedArgs, progress)
 
                 context.progressPercentage =
                     currentProgress + (cptSyncTable * 0.2 / message.schema.tables.size)
@@ -2333,7 +2346,7 @@ abstract class BaseOrchestrator(
                 changesSelected
             )
             this.reportProgress(context, progress, databaseChangesSelectedArgs)
-            this.intercept(databaseChangesSelectedArgs)
+            this.intercept(databaseChangesSelectedArgs, progress)
         }
 
         return Triple(context, batchInfo, changesSelected)
@@ -2379,9 +2392,9 @@ abstract class BaseOrchestrator(
         setup: SyncSetup,
         provision: EnumSet<SyncProvision>,
         scope: Any?,
-        progress: Progress<ProgressArgs>? = null
+        progress: Progress<ProgressArgs>?
     ): Boolean {
-        this.intercept(DeprovisioningArgs(ctx, provision, schema))
+        this.intercept(DeprovisioningArgs(ctx, provision, schema), progress)
 
         // get Database builder
         var builder = this.provider.getDatabaseBuilder()
@@ -2527,8 +2540,8 @@ abstract class BaseOrchestrator(
         }
 
         val args = DeprovisionedArgs(ctx, provision, schema)
-        this.intercept(args)
-        this.reportProgress(ctx, progress, args);
+        this.intercept(args, progress)
+        this.reportProgress(ctx, progress, args)
 
         return true
     }
@@ -2610,14 +2623,14 @@ abstract class BaseOrchestrator(
         progress: Progress<ProgressArgs>?
     ): Boolean {
         val action = TriggerDroppingArgs(ctx, tableBuilder.tableDescription, triggerType)
-        this.intercept(action)
+        this.intercept(action, progress)
 
         if (action.cancel)
             return false
 
         tableBuilder.dropTrigger(triggerType)
 
-        this.intercept(TriggerDroppedArgs(ctx, tableBuilder.tableDescription, triggerType))
+        this.intercept(TriggerDroppedArgs(ctx, tableBuilder.tableDescription, triggerType), progress)
         return true
     }
 

@@ -51,11 +51,6 @@ class MessageApplyChanges(
         val disableConstraintsOnApplyChanges: Boolean,
 
         /**
-         * Gets or Sets if during appy changes, we are using bulk operations
-         */
-        val useBulkOperations: Boolean,
-
-        /**
          * Gets or Sets if we should cleaning tracking table metadatas
          */
         val cleanMetadatas: Boolean,
