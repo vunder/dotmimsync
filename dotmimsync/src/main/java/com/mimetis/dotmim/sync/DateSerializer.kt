@@ -14,9 +14,9 @@ object DateSerializer : KSerializer<Date> {
     private val dateFormat =
         // SDK 24
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSX"
+            "yyyy-MM-dd'T'HH:mm:ss[.SSSSSSS]X"
         else
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSZZZZZ"
+            "yyyy-MM-dd'T'HH:mm:ss[.SSSSSSS]ZZZZZ"
 
     private val gmtTimeZone = TimeZone.getTimeZone("GMT")
 
