@@ -23,12 +23,13 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class WebClientOrchestrator(
+    serviceAddress: String,
     private val authHeader: String,
     private val converter: Converter? = null,
     private val maxDownladingDegreeOfParallelism: Int = 4
 ) : RemoteOrchestrator(FancyCoreProvider(), SyncOptions(), SyncSetup()) {
     private val TAG = this::class.java.simpleName
-    private val service = DotmimServiceImpl()
+    private val service = DotmimServiceImpl(serviceAddress)
 
     /**
      * Send a request to remote web proxy for First step : Ensure scopes and schema

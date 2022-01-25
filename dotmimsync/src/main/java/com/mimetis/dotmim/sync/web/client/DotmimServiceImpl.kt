@@ -21,7 +21,9 @@ import java.net.CookieManager
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class DotmimServiceImpl {
+class DotmimServiceImpl(
+    val serviceAddress: String
+) {
     private interface DotmimServiceInternal {
         @POST("sync")
         suspend fun ensureSchema(
@@ -162,9 +164,6 @@ class DotmimServiceImpl {
         ignoreUnknownKeys = true
         isLenient = true
     }
-
-    val serviceAddress: String = "https://money-wallet.net/sync-api/"
-//    val serviceAddress: String = "http://192.168.0.206:6000/"
 
     private var service: DotmimServiceInternal
 
