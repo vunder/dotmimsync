@@ -74,11 +74,7 @@ class SyncSet(
      * Clone the SyncSet schema (without data)
      */
     fun clone(includeTables: Boolean = true): SyncSet {
-        val clone = SyncSet(
-            SyncTables(),
-            SyncRelations(),
-            SyncFilters()
-        )
+        val clone = SyncSet()
 
         if (!includeTables)
             return clone
