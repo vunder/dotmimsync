@@ -45,7 +45,4 @@ class SyncConflict() {
     internal fun addRemoteRow(row: SyncRow) {
         this.remoteRow = row
     }
-
-    fun hasLocalRow() = ::localRow.isInitialized
-    fun hasRemoteRow() = ::remoteRow.isInitialized
 }
