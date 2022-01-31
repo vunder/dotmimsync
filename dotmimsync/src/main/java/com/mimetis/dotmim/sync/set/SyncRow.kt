@@ -21,7 +21,7 @@ class SyncRow(@Transient val length: Int = 0) {
         table: SyncTable,
         row: Array<Any?>,
         state: DataRowState = DataRowState.Unchanged
-    ) : this(0) {
+    ) : this(row.size) {
         buffer = row
         this.table = table
         this.rowState = state
