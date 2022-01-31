@@ -73,7 +73,7 @@ class SyncRow(@Transient val length: Int = 0) {
         this.rowState = if (drs is DataRowState) {
             drs
         } else {
-            DataRowState.values().first { it == drs }
+            DataRowState.values().first { it.value == drs }
         }
     }
 
