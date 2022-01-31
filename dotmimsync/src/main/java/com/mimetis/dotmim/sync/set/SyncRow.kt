@@ -21,7 +21,7 @@ class SyncRow(@Transient val length: Int = 0) {
         table: SyncTable,
         row: Array<Any?>,
         state: DataRowState = DataRowState.Unchanged
-    ) : this(0) {
+    ) : this(row.size) {
         buffer = row
         this.table = table
         this.rowState = state
@@ -69,7 +69,12 @@ class SyncRow(@Transient val length: Int = 0) {
             throw Exception("row must contains State on position 0 and UpdateScopeId on position 1")
 
         System.arraycopy(row, 1, buffer, 0, length)
-        this.rowState = row[0] as DataRowState
+        val drs = row[0]
+        this.rowState = if (drs is DataRowState) {
+            drs
+        } else {
+            DataRowState.values().first { it.value == drs }
+        }
     }
 
     fun clear() {
