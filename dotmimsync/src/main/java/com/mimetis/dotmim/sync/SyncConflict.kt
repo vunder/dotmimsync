@@ -32,6 +32,8 @@ class SyncConflict() {
      */
     var type: ConflictType = ConflictType.ErrorsOccurred
 
+    fun hasLocalRow() = this::localRow.isInitialized
+
     /**
      * add a local row
      */
