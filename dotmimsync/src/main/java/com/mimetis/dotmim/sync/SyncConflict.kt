@@ -32,6 +32,9 @@ class SyncConflict() {
      */
     var type: ConflictType = ConflictType.ErrorsOccurred
 
+    /**
+     * If localRow was initialized
+     */
     fun hasLocalRow() = this::localRow.isInitialized
 
     /**
