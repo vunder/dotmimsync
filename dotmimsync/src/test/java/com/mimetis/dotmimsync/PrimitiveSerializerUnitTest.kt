@@ -133,4 +133,34 @@ class PrimitiveSerializerUnitTest {
         Assert.assertTrue(result is String)
         Assert.assertEquals("Foo", result)
     }
+
+    @Test
+    fun `should return String for multiline (n) text starts with number`() {
+        val decoderMock = Mockito.mock(JsonDecoder::class.java)
+        val element = Json.encodeToJsonElement("123\nfff")
+        Mockito.`when`(decoderMock.decodeJsonElement()).thenReturn(element)
+
+        val result = PrimitiveSerializer.deserialize(decoderMock)
+        Assert.assertTrue(result is String)
+    }
+
+    @Test
+    fun `should return String for multiline (r) text starts with number1`() {
+        val decoderMock = Mockito.mock(JsonDecoder::class.java)
+        val element = Json.encodeToJsonElement("123\rfff")
+        Mockito.`when`(decoderMock.decodeJsonElement()).thenReturn(element)
+
+        val result = PrimitiveSerializer.deserialize(decoderMock)
+        Assert.assertTrue(result is String)
+    }
+
+    @Test
+    fun `should return String for multiline (rn) text starts with number`() {
+        val decoderMock = Mockito.mock(JsonDecoder::class.java)
+        val element = Json.encodeToJsonElement("123\r\nfff")
+        Mockito.`when`(decoderMock.decodeJsonElement()).thenReturn(element)
+
+        val result = PrimitiveSerializer.deserialize(decoderMock)
+        Assert.assertTrue(result is String)
+    }
 }
