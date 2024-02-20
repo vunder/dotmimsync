@@ -48,7 +48,7 @@ object PrimitiveSerializer : KSerializer<Any> {
 
         return when {
             element.jsonPrimitive.booleanOrNull != null -> element.jsonPrimitive.boolean
-            element.jsonPrimitive.content.isMultiline() -> element.jsonPrimitive.content
+            element.jsonPrimitive.isStringWithNumber() -> element.jsonPrimitive.content
             element.jsonPrimitive.intOrNull != null -> element.jsonPrimitive.int
             element.jsonPrimitive.longOrNull != null -> element.jsonPrimitive.long
             element.jsonPrimitive.doubleOrNull != null -> element.jsonPrimitive.double
@@ -57,11 +57,9 @@ object PrimitiveSerializer : KSerializer<Any> {
         }
     }
 
-    private fun String.isMultiline(): Boolean {
-        if (!this.contains('\r') && !this.contains('\n'))
-            return false
-
-        return this.substringAfter('\r').trimIndent().isNotEmpty()
-                || this.substringAfter('\n').trimIndent().isNotEmpty()
+    private fun JsonPrimitive.isStringWithNumber(): Boolean {
+        return this.intOrNull?.let {
+            this.content.substringAfter(it.toString()).isNotEmpty()
+        } ?: false
     }
 }

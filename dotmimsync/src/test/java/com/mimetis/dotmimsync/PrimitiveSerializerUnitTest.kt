@@ -163,4 +163,14 @@ class PrimitiveSerializerUnitTest {
         val result = PrimitiveSerializer.deserialize(decoderMock)
         Assert.assertTrue(result is String)
     }
+
+    @Test
+    fun `should return String for text starts with the number`() {
+        val decoderMock = Mockito.mock(JsonDecoder::class.java)
+        val element = Json.encodeToJsonElement("98751 км")
+        Mockito.`when`(decoderMock.decodeJsonElement()).thenReturn(element)
+
+        val result = PrimitiveSerializer.deserialize(decoderMock)
+        Assert.assertTrue(result is String)
+    }
 }
