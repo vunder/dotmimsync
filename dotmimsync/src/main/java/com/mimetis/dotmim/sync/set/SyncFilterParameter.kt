@@ -35,7 +35,7 @@ class SyncFilterParameter(
          * Gets or Sets the parameter db type
          */
         @SerialName("dt")
-        var dbType: DbType?,
+        var dbType: DbType? = null,
 
         /**
          * Gets or Sets the parameter default value expression.
