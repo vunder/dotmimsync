@@ -463,8 +463,8 @@ class SqliteTableBuilder(
     ): String {
         // We MUST check if we are from the same provider (if it's mysql or oracle, we fallback on dbtype
         if (originalDbType.isNotBlank() && fromProviderType == ownerProviderType) {
-            val ownedDbType = validateOwnerDbType(originalDbType, isUnsigned, isUnicode, maxLength)
-            return getPrecisionStringFromOwnerDbType(ownedDbType, maxLength, precision, scale)
+//            val ownedDbType = validateOwnerDbType(originalDbType, isUnsigned, isUnicode, maxLength)
+            return getPrecisionStringFromOwnerDbType(originalDbType, maxLength, precision, scale)
         }
 
         // if it's not the same provider, fallback on DbType instead.
