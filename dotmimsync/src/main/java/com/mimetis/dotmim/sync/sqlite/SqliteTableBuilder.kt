@@ -435,8 +435,15 @@ class SqliteTableBuilder(
     ): String {
         // We MUST check if we are from the same provider (if it's mysql or oracle, we fallback on dbtype
         if (originalDbType.isNotBlank() && fromProviderType == ownerProviderType) {
-            val ownedDbType = validateOwnerDbType(originalDbType, isUnsigned, isUnicode, maxLength)
-            return getStringFromOwnerDbType(DbType.values()[ownedDbType.ordinal])
+]           val ownedDbType = validateOwnerDbType(originalDbType, isUnsigned, isUnicode, maxLength)
+            return when (ownedDbType) {
+                SqliteType.Integer -> "integer"
+                SqliteType.Real -> "numeric"
+                SqliteType.Text -> "text"
+                SqliteType.Blob -> "blob"
+                else -> throw Exception("this SqliteType ${ownedDbType} is not supported")
+            }
+            return getStringFromOwnerDbType(ownedDbType)//DbType.values()[ownedDbType.ordinal])
         }
 
         // if it's not the same provider, fallback on DbType instead.
@@ -499,7 +506,7 @@ class SqliteTableBuilder(
             DbType.VarNumeric ->
                 "real"
             else ->
-                throw  Exception("this DbType ${dbType} is not supported")
+                throw Exception("this DbType ${dbType} is not supported")
         }
 
     private fun getStringFromOwnerDbType(ownerType: Any): String {
