@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.messages
 
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.batch.BatchInfo
 import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
 import com.mimetis.dotmim.sync.set.SyncSet
@@ -13,12 +14,12 @@ class MessageApplyChanges(
         /**
          * Gets the local Scope Id
          */
-        val localScopeId: UUID,
+        val localScopeId: Uuid,
 
         /**
          * Gets the sender Scope Id
          */
-        val senderScopeId: UUID?,
+        val senderScopeId: Uuid?,
 
         /**
          * Gets or Sets if the sync is a first sync. In this case, the last sync timestamp is ignored

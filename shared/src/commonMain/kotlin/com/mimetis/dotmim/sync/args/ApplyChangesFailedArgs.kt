@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.args
 
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.SyncConflict
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.enumerations.ConflictResolution
@@ -23,7 +24,7 @@ class ApplyChangesFailedArgs(
     /**
      * Gets or Sets the scope id who will be marked as winner
      */
-    val senderScopeId: UUID?
+    val senderScopeId: Uuid?
 ) : ProgressArgs(context) {
     private var _resolution: ConflictResolution = resolution
 

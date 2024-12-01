@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.batch
 
+import com.benasher44.uuid.Uuid
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -282,7 +283,7 @@ class BatchInfo() {
                 else -> throw Exception("OverflowException: too much batches !!!")
             }
 
-            return "${index}_${UUID.randomUUID().toString().replace(".", "_")}.batch"
+            return "${index}_${Uuid.randomUUID().toString().replace(".", "_")}.batch"
         }
     }
 }

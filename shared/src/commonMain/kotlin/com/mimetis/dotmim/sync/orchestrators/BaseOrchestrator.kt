@@ -1,6 +1,7 @@
 package com.mimetis.dotmim.sync.orchestrators
 
 import android.database.Cursor
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.*
 import com.mimetis.dotmim.sync.args.*
 import com.mimetis.dotmim.sync.batch.BatchInfo
@@ -80,7 +81,7 @@ abstract class BaseOrchestrator(
 
     open fun getContext(): SyncContext {
         return syncContext ?: SyncContext(
-            sessionId = UUID.randomUUID(),
+            sessionId = Uuid.randomUUID(),
             scopeName = this.scopeName
         )
     }
@@ -317,7 +318,7 @@ abstract class BaseOrchestrator(
         val scopes = scopeBuilder.getAllScopes(scopeName)
         if (scopes.isEmpty()) {
             var scope = ScopeInfo(
-                id = UUID.randomUUID(),
+                id = Uuid.randomUUID(),
                 name = scopeName,
                 isNewScope = true,
                 lastSync = null,
@@ -1295,7 +1296,7 @@ abstract class BaseOrchestrator(
      * The int returned is the conflict count I need
      */
     private fun handleConflict(
-        localScopeId: UUID, senderScopeId: UUID?, syncAdapter: DbSyncAdapter,
+        localScopeId: Uuid, senderScopeId: Uuid?, syncAdapter: DbSyncAdapter,
         context: SyncContext, conflictRow: SyncRow, schemaChangesTable: SyncTable,
         policy: ConflictResolutionPolicy, lastTimestamp: Long?
     ): Triple<Int, SyncRow?, Int> {
@@ -1451,10 +1452,10 @@ abstract class BaseOrchestrator(
      * A conflict has occured, we try to ask for the solution to the user
      */
     private fun getConflictAction(
-        context: SyncContext, localScopeId: UUID?, syncAdapter: DbSyncAdapter,
+        context: SyncContext, localScopeId: Uuid?, syncAdapter: DbSyncAdapter,
         conflictRow: SyncRow, schemaChangesTable: SyncTable, policy: ConflictResolutionPolicy,
-        senderScopeId: UUID?
-    ): Tuple<ApplyAction, ConflictType, SyncRow?, SyncRow?, UUID?> {
+        senderScopeId: Uuid?
+    ): Tuple<ApplyAction, ConflictType, SyncRow?, SyncRow?, Uuid?> {
         // default action
         var resolution =
             if (policy == ConflictResolutionPolicy.ClientWins) ConflictResolution.ClientWins else ConflictResolution.ServerWins
@@ -1467,7 +1468,7 @@ abstract class BaseOrchestrator(
 
         var finalRow: SyncRow? = null
         var localRow: SyncRow? = null
-        var finalSenderScopeId: UUID? = senderScopeId
+        var finalSenderScopeId: Uuid? = senderScopeId
 
         // default conflict type
         var conflictType =
@@ -1566,7 +1567,7 @@ abstract class BaseOrchestrator(
     private fun internalGetConflictRow(
         context: SyncContext,
         syncAdapter: DbSyncAdapter,
-        localScopeId: UUID,
+        localScopeId: Uuid,
         primaryKeyRow: SyncRow,
         schema: SyncTable
     ): SyncRow? {
@@ -1640,7 +1641,7 @@ abstract class BaseOrchestrator(
      */
     private fun internalApplyConflictUpdate(
         context: SyncContext, syncAdapter: DbSyncAdapter,
-        row: SyncRow, lastTimestamp: Long?, senderScopeId: UUID?,
+        row: SyncRow, lastTimestamp: Long?, senderScopeId: Uuid?,
         forceWrite: Boolean
     ): Boolean {
         if (row.table == null)
@@ -1657,7 +1658,7 @@ abstract class BaseOrchestrator(
      */
     private fun internalApplyConflictDelete(
         context: SyncContext, syncAdapter: DbSyncAdapter,
-        row: SyncRow, lastTimestamp: Long?, senderScopeId: UUID?,
+        row: SyncRow, lastTimestamp: Long?, senderScopeId: Uuid?,
         forceWrite: Boolean
     ): Boolean {
         if (row.table == null)
@@ -1675,7 +1676,7 @@ abstract class BaseOrchestrator(
      */
     private fun internalUpdateMetadatas(
         context: SyncContext, syncAdapter: DbSyncAdapter,
-        row: SyncRow, senderScopeId: UUID?, forceWrite: Boolean
+        row: SyncRow, senderScopeId: Uuid?, forceWrite: Boolean
     ): Boolean {
         val metadataUpdatedRowsCount = syncAdapter.updateMetadata(
             senderScopeId,

@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync
 
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.messages.DatabaseChangesApplied
 import com.mimetis.dotmim.sync.messages.DatabaseChangesSelected
 import kotlinx.serialization.Serializable
@@ -16,7 +17,7 @@ class SyncResult(
      * Current Session, in progress
      */
     @Serializable(with = UUIDSerializer::class)
-    var sessionId: UUID,
+    var sessionId: Uuid,
 
     /**
      * Gets or sets the time when a sync sessionn started.

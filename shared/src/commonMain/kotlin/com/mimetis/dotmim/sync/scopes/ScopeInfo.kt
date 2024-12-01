@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.scopes
 
+import com.benasher44.uuid.Uuid
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -24,7 +25,7 @@ class ScopeInfo(
          */
         @SerialName("id")
         @Serializable(with = UUIDSerializer::class)
-        var id: UUID,
+        var id: Uuid,
 
         /**
          * Gets or Sets if the current provider is newly created one in database.

@@ -4,6 +4,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.util.Base64
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.builders.ParserName
 import com.mimetis.dotmim.sync.set.SyncColumn
@@ -237,7 +238,7 @@ class SqliteSyncAdapter(
     }
 
     override fun deleteRow(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
@@ -334,7 +335,7 @@ class SqliteSyncAdapter(
     }
 
     override fun initializeRow(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
@@ -502,7 +503,7 @@ class SqliteSyncAdapter(
     }
 
     override fun updateRow(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
@@ -566,7 +567,7 @@ class SqliteSyncAdapter(
     }
 
     override fun updateMetadata(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         isDeleted: Boolean,
         forceWrite: Boolean,
         row: SyncRow

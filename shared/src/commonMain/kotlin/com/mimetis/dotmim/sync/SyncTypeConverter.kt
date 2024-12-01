@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync
 
+import com.benasher44.uuid.Uuid
 import java.math.BigDecimal
 import java.util.*
 
@@ -38,8 +39,8 @@ object SyncTypeConverter {
                     tryConvertTo<Byte>(value)
                 typeOfT == Boolean::class.java ->
                     tryConvertTo<Boolean>(value)
-                typeOfT == UUID::class.java ->
-                    tryConvertTo<UUID>(value)
+                typeOfT == Uuid::class.java ->
+                    tryConvertTo<Uuid>(value)
                 typeOfT == Char::class.java ->
                     tryConvertTo<Char>(value)
                 typeOfT == BigDecimal::class.java ->

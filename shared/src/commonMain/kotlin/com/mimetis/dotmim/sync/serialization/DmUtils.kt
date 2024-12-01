@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.serialization
 
+import com.benasher44.uuid.Uuid
 import java.math.BigDecimal
 import java.util.*
 
@@ -36,7 +37,7 @@ object DmUtils {
 //                    "14"
                 BigDecimal::class.java ->
                     "15"
-                UUID::class.java ->
+                Uuid::class.java ->
                     "16"
                 String::class.java ->
                     "17"

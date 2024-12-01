@@ -3,6 +3,7 @@ package com.mimetis.dotmim.sync.sqlite
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteStatement
+import com.benasher44.uuid.Uuid
 import java.io.Closeable
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
@@ -118,7 +119,7 @@ class SqliteQueryWrapper(
                 is Double -> statement?.bindDouble(index++, value)
                 is Float -> statement?.bindDouble(index++, value.toDouble())
                 is BigDecimal -> statement?.bindDouble(index++, value.toDouble())
-                is UUID -> statement?.bindString(index++, value.toString().uppercase())
+                is Uuid -> statement?.bindString(index++, value.toString().uppercase())
                 is Date -> statement?.bindString(index++, dateFormat.format(value))
                 else -> statement?.bindString(index++, value.toString())
             }

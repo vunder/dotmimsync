@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.messages
 
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import java.util.*
@@ -12,12 +13,12 @@ class MessageGetChangesBatch(
          * Gets or Sets the Scope Id that should be excluded when we get lines from the local store
          * Usable only from Server side
          */
-        var excludingScopeId: UUID? = null,
+        var excludingScopeId: Uuid? = null,
 
         /**
          * Gets or Sets the local Scope Id that will replace <NULL> values when creating the row
          */
-        var localScopeId: UUID,
+        var localScopeId: Uuid,
 
         /**
          * Gets or Sets if the sync is a first sync. In this case, the last sync timestamp is ignored

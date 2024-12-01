@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.set
 
+import com.benasher44.uuid.Uuid
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.mimetis.dotmim.sync.PrimitiveSerializer
@@ -75,7 +76,7 @@ class ContainerTable(
                         2
                     Int::class.java, UInt::class.java, Float::class.java ->
                         4
-                    BigDecimal::class.java, UUID::class.java ->
+                    BigDecimal::class.java, Uuid::class.java ->
                         16
                     else ->
                         0

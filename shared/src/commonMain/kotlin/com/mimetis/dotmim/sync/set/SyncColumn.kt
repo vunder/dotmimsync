@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.set
 
+import com.benasher44.uuid.Uuid
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.mimetis.dotmim.sync.setup.DbType
@@ -112,7 +113,7 @@ class SyncColumn(
 //                    "14"
                 BigDecimal::class.java ->
                     "15"
-                UUID::class.java ->
+                Uuid::class.java ->
                     "16"
                 String::class.java ->
                     "17"
@@ -255,7 +256,7 @@ class SyncColumn(
                 "15" ->
                     BigDecimal::class.java
                 "16" ->
-                    UUID::class.java
+                    Uuid::class.java
                 "17" ->
                     String::class.java
 //                "18"->
