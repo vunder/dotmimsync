@@ -1,12 +1,12 @@
 package com.mimetis.dotmim.sync
 
 import android.database.Cursor
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.set.SyncRow
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import java.io.Closeable
-import java.util.*
 
 abstract class DbSyncAdapter(
     val tableDescription: SyncTable,
@@ -22,7 +22,7 @@ abstract class DbSyncAdapter(
     abstract fun disableConstraints()
     abstract fun reset()
     abstract fun deleteRow(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
@@ -30,7 +30,7 @@ abstract class DbSyncAdapter(
     ): Int
 
     abstract fun initializeRow(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
@@ -38,7 +38,7 @@ abstract class DbSyncAdapter(
     ): Int
 
     abstract fun updateRow(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         syncTimeStamp: Long?,
         isDeleted: Boolean,
         forceWrite: Boolean,
@@ -46,7 +46,7 @@ abstract class DbSyncAdapter(
     ): Int
 
     abstract fun updateMetadata(
-        scopeId: UUID?,
+        scopeId: Uuid?,
         isDeleted: Boolean,
         forceWrite: Boolean,
         row: SyncRow

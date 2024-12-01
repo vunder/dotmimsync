@@ -1,7 +1,10 @@
 package com.mimetis.dotmim.sync
 
-import android.annotation.SuppressLint
 import android.util.Base64
+import com.benasher44.uuid.Uuid
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format
+import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -11,21 +14,15 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 @ExperimentalSerializationApi
 object PrimitiveSerializer : KSerializer<Any> {
-    private const val dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-
-    private val gmtTimeZone = TimeZone.getTimeZone("GMT")
-
-    @SuppressLint("SimpleDateFormat")
-    private val simpleDateFormat = SimpleDateFormat(dateFormat).apply { timeZone = gmtTimeZone }
+    private val dateFormat = LocalDateTime.Format { byUnicodePattern("yyyy-MM-dd'T'HH:mm:ss") }
+//    private const val dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor =
-        buildSerialDescriptor("PrimitiveSerializer", PolymorphicKind.SEALED)
+        buildSerialDescriptor("com.mimetis.dotmim.sync.PrimitiveSerializer", PolymorphicKind.SEALED)
 
     override fun serialize(encoder: Encoder, value: Any) {
         when (value) {
@@ -36,8 +33,8 @@ object PrimitiveSerializer : KSerializer<Any> {
             is Double -> encoder.encodeDouble(value)
             is Float -> encoder.encodeFloat(value)
             is ByteArray -> encoder.encodeString(Base64.encodeToString(value, Base64.NO_WRAP))
-            is UUID -> encoder.encodeString(value.toString().uppercase())
-            is Date -> encoder.encodeString(simpleDateFormat.format(value))
+            is Uuid -> encoder.encodeString(value.toString().uppercase())
+            is LocalDateTime -> encoder.encodeString(value.format(dateFormat))
             else -> encoder.encodeString(value.toString())
         }
     }

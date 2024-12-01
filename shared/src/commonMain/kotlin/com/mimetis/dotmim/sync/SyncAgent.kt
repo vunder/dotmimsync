@@ -1,6 +1,7 @@
 package com.mimetis.dotmim.sync
 
 import android.util.Log
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.args.ProgressArgs
 import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
 import com.mimetis.dotmim.sync.enumerations.SyncProvision
@@ -29,7 +30,7 @@ class SyncAgent(
         var completeTime = utcNow()
 
         val context = SyncContext(
-                sessionId = UUID.randomUUID(),
+                sessionId = Uuid.randomUUID(),
                 scopeName = this.scopeName,
                 parameters = this.parameters,
                 syncType = syncType

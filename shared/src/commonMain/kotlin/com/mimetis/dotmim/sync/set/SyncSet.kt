@@ -24,7 +24,7 @@ class SyncSet(
      */
     @SerialName("f")
     var filters: SyncFilters
-) : Closeable {
+) : AutoCloseable {
     /**
      * Create a new SyncSet, empty
      */

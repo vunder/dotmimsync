@@ -1,33 +1,24 @@
 package com.mimetis.dotmim.sync
 
-import android.annotation.SuppressLint
-import android.os.Build
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format
+import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import java.text.SimpleDateFormat
-import java.util.*
 
-object DateSerializer : KSerializer<Date> {
+internal object DateSerializer : KSerializer<LocalDateTime> {
     private val dateFormat =
-        // SDK 24
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSX"
-        else
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSZZZZZ"
+        LocalDateTime.Format { byUnicodePattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSX") }
 
-    private val gmtTimeZone = TimeZone.getTimeZone("GMT")
+    override val descriptor =
+        PrimitiveSerialDescriptor("com.mimetis.dotmim.sync.LocalDateTime", PrimitiveKind.STRING)
 
-    @SuppressLint("SimpleDateFormat")
-    private val simpleDateFormat = SimpleDateFormat(dateFormat).apply { timeZone = gmtTimeZone }
+    override fun deserialize(decoder: Decoder): LocalDateTime =
+        LocalDateTime.parse(decoder.decodeString(), dateFormat)
 
-    override val descriptor = PrimitiveSerialDescriptor("Date", PrimitiveKind.STRING)
-
-    override fun deserialize(decoder: Decoder): Date =
-        simpleDateFormat.parse(decoder.decodeString())!!
-
-    override fun serialize(encoder: Encoder, value: Date) =
-        encoder.encodeString(simpleDateFormat.format(value))
+    override fun serialize(encoder: Encoder, value: LocalDateTime) =
+        encoder.encodeString(value.format(dateFormat))
 }

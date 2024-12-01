@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync.orchestrators
 
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.*
 import com.mimetis.dotmim.sync.SyncVersion.major
 import com.mimetis.dotmim.sync.SyncVersion.toVersionInt
@@ -172,7 +173,7 @@ class LocalOrchestrator(
 
         // On local, we don't want to chase rows from "others"
         // We just want our local rows, so we dont exclude any remote scope id, by setting scope id to NULL
-        val remoteScopeId: UUID? = null
+        val remoteScopeId: Uuid? = null
         // lastSyncTS : get lines inserted / updated / deteleted after the last sync commited
         val lastSyncTS = scopeInfo.lastSyncTimestamp
         // isNew : If isNew, lasttimestamp is not correct, so grab all
@@ -305,7 +306,7 @@ class LocalOrchestrator(
         // Create the message containing everything needed to apply changes
         val applyChanges = MessageApplyChanges(
             scope.id,
-            UUID.fromString("00000000-0000-0000-0000-000000000000"),
+            Uuid.fromString("00000000-0000-0000-0000-000000000000"),
             isNew,
             lastSyncTS,
             schema,

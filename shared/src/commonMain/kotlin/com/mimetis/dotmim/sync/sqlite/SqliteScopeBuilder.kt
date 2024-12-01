@@ -2,9 +2,8 @@ package com.mimetis.dotmim.sync.sqlite
 
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
-import androidx.core.database.getStringOrNull
+import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.SyncVersion
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.mimetis.dotmim.sync.builders.DbScopeBuilder
@@ -71,7 +70,7 @@ class SqliteScopeBuilder(
             }
         }
 
-    override fun existsScopeInfo(scopeId: UUID): Boolean =
+    override fun existsScopeInfo(scopeId: Uuid): Boolean =
         database.rawQuery(
             "Select count(*) from ${scopeInfoTableName.unquoted()} where sync_scope_id=?",
             arrayOf(scopeId.toString())
@@ -129,7 +128,7 @@ class SqliteScopeBuilder(
 
     private fun readScope(cursor: Cursor, json: Json) =
         ScopeInfo(
-            id = UUID.fromString(cursor.getString(cursor.getColumnIndex("sync_scope_id"))),
+            id = Uuid.fromString(cursor.getString(cursor.getColumnIndex("sync_scope_id"))),
             name = cursor.getString(cursor.getColumnIndex("sync_scope_name")),
             schema = if (cursor.isNull(cursor.getColumnIndex("sync_scope_schema"))) null else json.decodeFromString<SyncSet>(
                 cursor.getString(cursor.getColumnIndex("sync_scope_schema"))
@@ -137,7 +136,9 @@ class SqliteScopeBuilder(
             setup = if (cursor.isNull(cursor.getColumnIndex("sync_scope_setup"))) null else json.decodeFromString<SyncSetup>(
                 cursor.getString(cursor.getColumnIndex("sync_scope_setup"))
             ),
-            version = cursor.getStringOrNull(cursor.getColumnIndex("sync_scope_version")) ?: SyncVersion.current,
+            version = (if (cursor.isNull(cursor.getColumnIndex("sync_scope_version"))) null else cursor.getString(
+                cursor.getColumnIndex("sync_scope_version")
+            )) ?: SyncVersion.current,
             lastSync = if (cursor.isNull(cursor.getColumnIndex("scope_last_sync"))) null else cursor.getLong(
                 cursor.getColumnIndex("scope_last_sync")
             ),

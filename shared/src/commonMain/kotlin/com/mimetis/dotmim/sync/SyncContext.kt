@@ -1,5 +1,6 @@
 package com.mimetis.dotmim.sync
 
+import com.benasher44.uuid.Uuid
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.mimetis.dotmim.sync.enumerations.SyncStage
@@ -12,14 +13,14 @@ import java.util.*
 class SyncContext(
     @SerialName("id")
     @Serializable(with = UUIDSerializer::class)
-    var sessionId: UUID,
+    var sessionId: Uuid,
 
     @SerialName("sn")
     var scopeName: String,
 
     @SerialName("csid")
     @Serializable(with = UUIDSerializer::class)
-    var clientScopeId: UUID? = null,
+    var clientScopeId: Uuid? = null,
 
     @SerialName("typ")
     var syncType: SyncType = SyncType.values()[0],
