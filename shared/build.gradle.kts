@@ -38,6 +38,8 @@ kotlin {
             implementation(libs.androidx.sqlite.bundled)
 
             implementation(libs.bundles.ktor)
+
+            implementation(libs.gradle.simple)
         }
         androidMain.dependencies {
 //            implementation(libs.ktor.client.okhttp)
