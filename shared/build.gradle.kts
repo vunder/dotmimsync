@@ -40,10 +40,10 @@ kotlin {
             implementation(libs.bundles.ktor)
         }
         androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
+//            implementation(libs.ktor.client.okhttp)
         }
         iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
+//            implementation(libs.ktor.client.darwin)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
