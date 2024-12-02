@@ -22,6 +22,7 @@ jobs:
     - name: Build with Gradle
       run: |
         curl -s "https://get.sdkman.io" | bash
+        source "/home/runner/.sdkman/bin/sdkman-init.sh"
         sdk install gradle
         gradle -v
         gradle wrapper
