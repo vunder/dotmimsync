@@ -35,7 +35,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: Build
-        run: ./gradlew build -Dsplit_targets
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -Dsplit_targets
   macos-build:
     name: Build on macOS
     runs-on: macos-14
@@ -55,4 +57,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: Build
-        run: ./gradlew build -Dsplit_targets
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -Dsplit_targets
