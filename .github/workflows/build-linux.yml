@@ -10,40 +10,49 @@ on:
     paths-ignore:
       - "**/*.md"
 
+
 jobs:
-  build:
+  linux-build:
+    name: Build on Linux
     runs-on: ubuntu-latest
-    name: Build on Ubuntu
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       - name: Install Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v1
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: 17
+      - name: Update dependencies
+        run: sudo apt-get update
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install libcurl4-openssl-dev libgtk-3-dev nodejs chromium-browser
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        run: sudo apt-get install nodejs chromium-browser
+      - name: Set up cache
+        uses: actions/cache@v2
         with:
-          gradle-home-cache-cleanup: true
-          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v2
-      - name: Build Linux
-        run: >
-          ./gradlew
-          build
-          publishAllFilteredToMavenLocal
-          -Ptarget=all_linux_hosted
-      - name: Bundle the build report
-        if: failure()
-        run: find . -type d -name 'reports' | zip -@ -r build-reports.zip
-      - name: Upload the build report
-        if: failure()
-        uses: actions/upload-artifact@v4
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build
+        run: ./gradlew build -Dsplit_targets
+  macos-build:
+    name: Build on macOS
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Java
+        uses: actions/setup-java@v1
         with:
-          name: error-report
-          path: build-reports.zip
+          distribution: 'zulu'
+          java-version: 17
+      - name: Set up cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build
+        run: ./gradlew build -Dsplit_targets
