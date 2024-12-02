@@ -25,7 +25,7 @@ jobs:
         source "/home/runner/.sdkman/bin/sdkman-init.sh"
     - name: Install gradle
       run: |
-        sdk install gradle 8.9
+        sdk install gradle
     - name: Gradle version
       run: gradle -v
     - name: Gradle wrapper
