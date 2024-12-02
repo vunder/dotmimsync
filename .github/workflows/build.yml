@@ -1,62 +1,26 @@
-name: Build Linux
+name: Android CI
 
 on:
   push:
     branches: [ "master" ]
-    paths-ignore:
-      - "**/*.md"
   pull_request:
     branches: [ "master" ]
-    paths-ignore:
-      - "**/*.md"
-
 
 jobs:
-  linux-build:
-    name: Build on Linux
+  build:
+
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Java
-        uses: actions/setup-java@v1
-        with:
-          distribution: 'zulu'
-          java-version: 17
-      - name: Update dependencies
-        run: sudo apt-get update
-      - name: Install dependencies
-        run: sudo apt-get install nodejs chromium-browser
-      - name: Set up cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Build
-        run: |
-          chmod +x ./gradlew
-          ./gradlew build -Dsplit_targets
-  macos-build:
-    name: Build on macOS
-    runs-on: macos-14
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Java
-        uses: actions/setup-java@v1
-        with:
-          distribution: 'zulu'
-          java-version: 17
-      - name: Set up cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Build
-        run: |
-          chmod +x ./gradlew
-          ./gradlew build -Dsplit_targets
+    - uses: actions/checkout@v4
+    - name: set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Build with Gradle
+      run: ./gradlew build
