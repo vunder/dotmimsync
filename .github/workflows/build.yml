@@ -19,11 +19,16 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build with Gradle
+    - name: Install SDKMAN
       run: |
         curl -s "https://get.sdkman.io" | bash
         source "/home/runner/.sdkman/bin/sdkman-init.sh"
-        sdk install gradle
-        gradle -v
-        gradle wrapper
-        ./gradlew build
+    - name: Install gradle
+      run: |
+        sdk install gradle 8.9
+    - name: Gradle version
+      run: gradle -v
+    - name: Gradle wrapper
+      run: gradle wrapper
+    - name: Build with Gradle
+      run: ./gradlew build
