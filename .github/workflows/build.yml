@@ -23,8 +23,6 @@ jobs:
       run: |
         curl -s "https://get.sdkman.io" | bash
         source "/home/runner/.sdkman/bin/sdkman-init.sh"
-    - name: Install gradle
-      run: |
         sdk install gradle
     - name: Gradle version
       run: gradle -v
