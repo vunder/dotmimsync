@@ -24,5 +24,5 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: |
-        export GRADLE_USER_HOME=`pwd`
+        export GRADLE_USER_HOME=`pwd`/gradle/wrapper
         ./gradlew build
