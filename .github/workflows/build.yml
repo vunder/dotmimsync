@@ -2,9 +2,6 @@ name: Android CI
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
 
 jobs:
   build:
@@ -24,5 +21,5 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: |
-        ./gradlew wrapper --gradle-version 8.7.2 --distribution-type bin
+        ./gradlew wrapper
         ./gradlew build
