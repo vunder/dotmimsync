@@ -21,7 +21,8 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: |
+        curl -s "https://get.sdkman.io" | bash
         sdk install gradle
         gradle -v
-        ./gradlew wrapper
+        gradle wrapper
         ./gradlew build
