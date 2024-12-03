@@ -15,11 +15,16 @@ jobs:
       with:
         java-version: '18'
         distribution: 'temurin'
-        cache: gradle
+#        cache: gradle
 
+    - name: Install SDKMAN
+      run: |
+        curl -s "https://get.sdkman.io" | bash
+        source "/home/runner/.sdkman/bin/sdkman-init.sh"
+        sdk install gradle 8.5
+#    - name: Gradle wrapper
+#      run: gradle wrapper --gradle-version 8.5
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Gradle wrapper
-      run: ./gradlew wrapper --gradle-version 8.5
     - name: Build with Gradle
       run: ./gradlew build
