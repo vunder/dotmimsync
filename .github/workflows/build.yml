@@ -27,6 +27,6 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Gradle wrapper
-      run: ./gradlew wrapper --gradle-version 8.5.0 --distribution-type bin --gradle-distribution-url https://services.gradle.org/distributions/gradle-8.5-bin.zip
+      run: gradle wrapper --gradle-version 8.5.0 --distribution-type bin --gradle-distribution-url https://services.gradle.org/distributions/gradle-8.5-bin.zip
     - name: Build with Gradle
-      run: ./gradlew build --gradle-distribution-url https://services.gradle.org/distributions/gradle-8.5-bin.zip
+      run: ./gradlew build
