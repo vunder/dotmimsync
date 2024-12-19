@@ -5,7 +5,7 @@
 
 Android (Kotlin) port for [Dotmim.Sync](https://github.com/Mimetis/Dotmim.Sync) C# library. Original library documentation can be found [here](https://dotmimsync.readthedocs.io/)
 
-
+!
 ## Adding dependencies
 To use library in your app add link to JitPack repo
 
