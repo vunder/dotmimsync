@@ -149,7 +149,7 @@ internal class DotmimServiceImpl(
             if (request.body is OutgoingContent.ByteArrayContent) {
                 val bytes = (request.body as OutgoingContent.ByteArrayContent).bytes()
                 val digest = md.digest(bytes)
-                val hash = Base64.encode(digest)
+                val hash = digest.encodeBase64()
                 request.headers.append("dotmim-sync-hash", hash)
             }
             execute(request)
