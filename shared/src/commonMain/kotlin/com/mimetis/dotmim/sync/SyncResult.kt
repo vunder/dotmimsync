@@ -1,16 +1,17 @@
 package com.mimetis.dotmim.sync
 
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.messages.DatabaseChangesApplied
 import com.mimetis.dotmim.sync.messages.DatabaseChangesSelected
 import kotlinx.serialization.Serializable
-import java.util.*
 import kotlin.math.max
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Context of the current Sync session
  * Encapsulates data changes and metadata for a synchronization session.
  */
+@OptIn(ExperimentalUuidApi::class)
 @Serializable
 class SyncResult(
     /**

@@ -2,10 +2,12 @@ package com.mimetis.dotmim.sync.args
 
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
+import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * Event args generated during EndSession stage
  */
+@OptIn(ExperimentalUuidApi::class)
 class SessionEndArgs(
     context: SyncContext
 ) : ProgressArgs(context) {

@@ -1,14 +1,15 @@
 package com.mimetis.dotmim.sync
 
-import com.benasher44.uuid.Uuid
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import com.mimetis.dotmim.sync.enumerations.SyncStage
 import com.mimetis.dotmim.sync.enumerations.SyncType
 import com.mimetis.dotmim.sync.enumerations.SyncWay
 import com.mimetis.dotmim.sync.parameter.SyncParameters
-import java.util.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 @Serializable
 class SyncContext(
     @SerialName("id")

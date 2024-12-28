@@ -1,17 +1,18 @@
 package com.mimetis.dotmim.sync.batch
 
-import com.benasher44.uuid.Uuid
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.collections.ArrayList
+import java.util.Calendar
+import java.util.Locale
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Represents a Batch, containing a full or serialized change set
@@ -270,6 +271,7 @@ class BatchInfo() {
     }
 
 
+    @OptIn(ExperimentalUuidApi::class)
     companion object {
         /**
          * generate a batch file name
@@ -283,7 +285,7 @@ class BatchInfo() {
                 else -> throw Exception("OverflowException: too much batches !!!")
             }
 
-            return "${index}_${Uuid.randomUUID().toString().replace(".", "_")}.batch"
+            return "${index}_${Uuid.random().toString().replace(".", "_")}.batch"
         }
     }
 }

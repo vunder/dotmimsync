@@ -1,16 +1,17 @@
 package com.mimetis.dotmim.sync.args
 
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.SyncConflict
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.enumerations.ConflictResolution
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncRow
-import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Raised as an argument when an apply is failing. Waiting from user for the conflict resolution
  */
+@OptIn(ExperimentalUuidApi::class)
 class ApplyChangesFailedArgs(
     context: SyncContext,
 

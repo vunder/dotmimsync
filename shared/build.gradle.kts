@@ -38,7 +38,6 @@ kotlin {
             implementation(libs.jetbrains.serialization.json)
 //            implementation(libs.jetbrains.serialization.core.jvm)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.kotlinx.uuid)
             implementation(libs.androidx.sqlite.bundled)
 
             implementation(libs.bundles.ktor)

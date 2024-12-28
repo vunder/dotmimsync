@@ -1,15 +1,16 @@
 package com.mimetis.dotmim.sync.messages
 
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.batch.BatchInfo
 import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Message exchanged during the Begin session sync stage
  */
+@OptIn(ExperimentalUuidApi::class)
 class MessageApplyChanges(
         /**
          * Gets the local Scope Id

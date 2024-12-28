@@ -1,13 +1,15 @@
 package com.mimetis.dotmim.sync
 
 import android.database.Cursor
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.set.SyncRow
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import java.io.Closeable
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 abstract class DbSyncAdapter(
     val tableDescription: SyncTable,
     val setup: SyncSetup

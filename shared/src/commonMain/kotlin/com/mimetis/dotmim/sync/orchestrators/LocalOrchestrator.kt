@@ -1,6 +1,5 @@
 package com.mimetis.dotmim.sync.orchestrators
 
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.*
 import com.mimetis.dotmim.sync.SyncVersion.major
 import com.mimetis.dotmim.sync.SyncVersion.toVersionInt
@@ -20,7 +19,10 @@ import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class LocalOrchestrator(
     provider: CoreProvider,
     options: SyncOptions,
@@ -306,7 +308,7 @@ class LocalOrchestrator(
         // Create the message containing everything needed to apply changes
         val applyChanges = MessageApplyChanges(
             scope.id,
-            Uuid.fromString("00000000-0000-0000-0000-000000000000"),
+            Uuid.NIL,
             isNew,
             lastSyncTS,
             schema,

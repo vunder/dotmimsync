@@ -1,9 +1,11 @@
 package com.mimetis.dotmim.sync.serialization
 
-import com.benasher44.uuid.Uuid
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 object DmUtils {
     fun getAssemblyQualifiedName(valueType: Class<*>): String =
             when (valueType) {

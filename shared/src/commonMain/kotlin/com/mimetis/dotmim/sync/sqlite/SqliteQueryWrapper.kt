@@ -3,11 +3,12 @@ package com.mimetis.dotmim.sync.sqlite
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteStatement
-import com.benasher44.uuid.Uuid
 import java.io.Closeable
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Wrapper to cache sql-query building and executing process
@@ -30,6 +31,7 @@ import java.util.*
  * @param dateFormat SimpleDateFormat instance to format Date values
  * @param queryBuilder Function to form sql query. Called only once on the first call
  */
+@OptIn(ExperimentalUuidApi::class)
 class SqliteQueryWrapper(
     private val database: SQLiteDatabase,
     private val dateFormat: SimpleDateFormat,

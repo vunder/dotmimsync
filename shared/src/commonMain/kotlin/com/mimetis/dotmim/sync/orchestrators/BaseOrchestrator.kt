@@ -1,7 +1,6 @@
 package com.mimetis.dotmim.sync.orchestrators
 
 import android.database.Cursor
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.*
 import com.mimetis.dotmim.sync.args.*
 import com.mimetis.dotmim.sync.batch.BatchInfo
@@ -19,9 +18,10 @@ import com.mimetis.dotmim.sync.setup.SyncSetup
 import com.mimetis.dotmim.sync.sqlite.CursorHelper.getValue
 import java.io.File
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashSet
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 abstract class BaseOrchestrator(
     /**
      * Gets or Sets the provider used by this local orchestrator
@@ -81,7 +81,7 @@ abstract class BaseOrchestrator(
 
     open fun getContext(): SyncContext {
         return syncContext ?: SyncContext(
-            sessionId = Uuid.randomUUID(),
+            sessionId = Uuid.random(),
             scopeName = this.scopeName
         )
     }
@@ -318,7 +318,7 @@ abstract class BaseOrchestrator(
         val scopes = scopeBuilder.getAllScopes(scopeName)
         if (scopes.isEmpty()) {
             var scope = ScopeInfo(
-                id = Uuid.randomUUID(),
+                id = Uuid.random(),
                 name = scopeName,
                 isNewScope = true,
                 lastSync = null,

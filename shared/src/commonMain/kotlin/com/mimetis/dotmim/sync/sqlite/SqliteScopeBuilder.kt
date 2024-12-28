@@ -2,17 +2,18 @@ package com.mimetis.dotmim.sync.sqlite
 
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.SyncVersion
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import com.mimetis.dotmim.sync.builders.DbScopeBuilder
 import com.mimetis.dotmim.sync.scopes.ScopeInfo
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.*
-import kotlin.collections.ArrayList
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class SqliteScopeBuilder(
     scopeInfoTableName: String,
     private val database: SQLiteDatabase
@@ -128,7 +129,7 @@ class SqliteScopeBuilder(
 
     private fun readScope(cursor: Cursor, json: Json) =
         ScopeInfo(
-            id = Uuid.fromString(cursor.getString(cursor.getColumnIndex("sync_scope_id"))),
+            id = Uuid.parse(cursor.getString(cursor.getColumnIndex("sync_scope_id"))),
             name = cursor.getString(cursor.getColumnIndex("sync_scope_name")),
             schema = if (cursor.isNull(cursor.getColumnIndex("sync_scope_schema"))) null else json.decodeFromString<SyncSet>(
                 cursor.getString(cursor.getColumnIndex("sync_scope_schema"))

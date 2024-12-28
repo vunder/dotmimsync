@@ -4,7 +4,6 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.util.Base64
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.builders.ParserName
 import com.mimetis.dotmim.sync.set.SyncColumn
@@ -13,8 +12,11 @@ import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.DbType
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class SqliteSyncAdapter(
     tableDescription: SyncTable,
     private val tableName: ParserName,

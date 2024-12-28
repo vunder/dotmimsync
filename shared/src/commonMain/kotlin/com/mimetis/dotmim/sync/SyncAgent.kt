@@ -1,7 +1,6 @@
 package com.mimetis.dotmim.sync
 
 import android.util.Log
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.args.ProgressArgs
 import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
 import com.mimetis.dotmim.sync.enumerations.SyncProvision
@@ -13,7 +12,10 @@ import com.mimetis.dotmim.sync.scopes.ServerScopeInfo
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class SyncAgent(
         clientProvider: CoreProvider,
         val remoteOrchestrator: RemoteOrchestrator,
@@ -30,7 +32,7 @@ class SyncAgent(
         var completeTime = utcNow()
 
         val context = SyncContext(
-                sessionId = Uuid.randomUUID(),
+                sessionId = Uuid.random(),
                 scopeName = this.scopeName,
                 parameters = this.parameters,
                 syncType = syncType

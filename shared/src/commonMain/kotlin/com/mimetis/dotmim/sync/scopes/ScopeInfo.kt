@@ -1,17 +1,18 @@
 package com.mimetis.dotmim.sync.scopes
 
-import com.benasher44.uuid.Uuid
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import com.mimetis.dotmim.sync.UUIDSerializer
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.util.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Mapping sur la table ScopeInfo
  */
+@OptIn(ExperimentalUuidApi::class)
 @Serializable
 class ScopeInfo(
         /**

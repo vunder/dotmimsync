@@ -1,12 +1,14 @@
 package com.mimetis.dotmim.sync.set
 
-import com.benasher44.uuid.Uuid
+import com.mimetis.dotmim.sync.setup.DbType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import com.mimetis.dotmim.sync.setup.DbType
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 @Serializable
 class SyncColumn(
         @SerialName("n")

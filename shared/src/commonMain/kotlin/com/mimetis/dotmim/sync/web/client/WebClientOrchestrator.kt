@@ -1,7 +1,6 @@
 package com.mimetis.dotmim.sync.web.client
 
 import android.util.Log
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.*
 import com.mimetis.dotmim.sync.args.*
 import com.mimetis.dotmim.sync.batch.BatchInfo
@@ -23,7 +22,10 @@ import java.io.File
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class WebClientOrchestrator(
     private val serviceAddress: String,
     client: HttpClient,
@@ -132,7 +134,7 @@ class WebClientOrchestrator(
         val batchDirectoryRoot = this.options.batchDirectory
         val batchDirectoryName = SimpleDateFormat("yyyy_MM_dd_ss", Locale.getDefault()).format(
             Calendar.getInstance(Locale.getDefault()).time
-        ) + Uuid.randomUUID().toString().replace(".", "")
+        ) + Uuid.random().toString().replace(".", "")
         val batchDirectoryFullPath = File(batchDirectoryRoot, batchDirectoryName).absolutePath
 
         // Create the BatchInfo serialized (forced because in a snapshot call, so we are obviously serialized on disk)
@@ -409,7 +411,7 @@ class WebClientOrchestrator(
         val batchDirectoryRoot = this.options.batchDirectory
         val batchDirectoryName = SimpleDateFormat("yyyy_MM_dd_ss", Locale.getDefault()).format(
             Calendar.getInstance(Locale.getDefault()).time
-        ) + Uuid.randomUUID().toString().replace(".", "")
+        ) + Uuid.random().toString().replace(".", "")
 
         serverBatchInfo.directoryRoot = batchDirectoryRoot
         serverBatchInfo.directoryName = batchDirectoryName

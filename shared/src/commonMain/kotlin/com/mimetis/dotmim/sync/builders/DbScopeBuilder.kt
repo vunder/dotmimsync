@@ -1,9 +1,10 @@
 package com.mimetis.dotmim.sync.builders
 
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.scopes.ScopeInfo
-import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 abstract class DbScopeBuilder(
         scopeInfoTableName: String
 ) {

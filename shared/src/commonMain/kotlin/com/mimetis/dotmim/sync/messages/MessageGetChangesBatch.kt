@@ -1,13 +1,14 @@
 package com.mimetis.dotmim.sync.messages
 
-import com.benasher44.uuid.Uuid
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Message exchanged during the Get Changes Batch sync stage
  */
+@OptIn(ExperimentalUuidApi::class)
 class MessageGetChangesBatch(
         /**
          * Gets or Sets the Scope Id that should be excluded when we get lines from the local store

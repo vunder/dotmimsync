@@ -1,12 +1,13 @@
 package com.mimetis.dotmim.sync.set
 
-import com.benasher44.uuid.Uuid
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import com.mimetis.dotmim.sync.PrimitiveSerializer
 import com.mimetis.dotmim.sync.serialization.DmUtils
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 @Serializable
 class ContainerTable(
@@ -28,6 +29,7 @@ class ContainerTable(
     override fun getAllNamesProperties(): List<String?> =
             listOf(tableName, schemaName)
 
+    @OptIn(ExperimentalUuidApi::class)
     companion object {
         /**
          * Calculate an estimation of the dictionary values size
