@@ -12,12 +12,11 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
+import io.ktor.util.encodeBase64
 import java.security.MessageDigest
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.uuid.ExperimentalUuidApi
 
-@OptIn(ExperimentalEncodingApi::class, ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class)
 internal class DotmimServiceImpl(
     serviceAddress: String,
     val client: HttpClient
