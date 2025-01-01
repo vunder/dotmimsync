@@ -20,7 +20,7 @@ To use library in your app add link to JitPack repo
 and add library dependency to your app build.gradle
 ```gradle
     dependencies {
-            implementation 'io.github.vunder:dotmimsync:VERSION'
+        implementation 'io.github.vunder.dotmimsync:dotmimsync-core:VERSION'
     }
 ```
 

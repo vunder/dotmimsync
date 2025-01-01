@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "dotmimsync"
-include(":shared")
+include(":dotmimsync-core")
