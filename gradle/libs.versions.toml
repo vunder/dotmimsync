@@ -5,7 +5,7 @@ kotlin = "2.0.20"
 serialization = "1.7.3"
 kotlinx-datetime = "0.6.1"
 sqlite = "2.5.0-alpha12"
-ktor = "2.3.12"
+ktor = "3.0.3"
 
 [libraries]
 gradle-simple = { module = "com.github.jitpack:gradle-simple", version.ref = "gradle-simple" }

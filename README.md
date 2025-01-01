@@ -13,7 +13,7 @@ To use library in your app add link to JitPack repo
     allprojects {
         repositories {
             ...
-            maven { url 'https://jitpack.io' }
+            mavenCentral()
         }
     }
 ```
@@ -21,13 +21,6 @@ and add library dependency to your app build.gradle
 ```gradle
     dependencies {
             implementation 'io.github.vunder:dotmimsync:VERSION'
-    }
-```
-
-Also it is necessary to add this dependency to make library work correctly with http-session. You can use newer version in case it is available
-```gradle
-    dependencies {
-            implementation 'com.squareup.okhttp3:okhttp-urlconnection:5.0.0-alpha.2'
     }
 ```
 
