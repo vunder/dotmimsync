@@ -1,3 +1,4 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -5,9 +6,12 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     `maven-publish`
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 kotlin {
+//    jvm()
+
     androidTarget {
         publishLibraryVariants("release")
         withSourcesJar(publish = true)
@@ -91,6 +95,14 @@ publishing.publications
             description = "Android (Kotlin) port for Dotmim.Sync C# library (https://dotmimsync.readthedocs.io/)"
             url = "https://github.com/vunder/dotmimsync"
 
+            licenses {
+                license {
+                    name = "MIT License"
+                    url = "https://mit-license.org/"
+                    distribution = "https://mit-license.org/"
+                }
+            }
+
             developers {
                 developer {
                     id = "vunder"
@@ -128,4 +140,9 @@ publishing {
             }
         }
     }
+}
+
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+    signAllPublications()
 }
