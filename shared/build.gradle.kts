@@ -83,7 +83,7 @@ android {
 publishing.publications
     .withType<MavenPublication>()
     .configureEach {
-        groupId = "com.github.vunder"
+        groupId = "io.github.vunder"
         version = "1.1.0"
 
         pom {
@@ -95,7 +95,7 @@ publishing.publications
                 developer {
                     id = "vunder"
                     name = "Aleksei Starchikov"
-                    email = "wp7apps@mail.ru"
+                    email = "aleksei.starchikov@outlook.com"
                 }
             }
 
@@ -112,15 +112,11 @@ publishing.publications
 
 publishing {
     repositories {
-        mavenLocal()
+//        mavenLocal()
 
         maven {
             name = "BuildDir"
-            url = uri(project.layout.buildDirectory.dir("maven-repo"))
-        }
-
-        maven {
-            name = "JitPack"
+            url = uri(rootProject.layout.buildDirectory.dir("maven-repo"))
         }
 
         maven {
