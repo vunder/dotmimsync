@@ -9,5 +9,6 @@ captures
 local.properties
 xcuserdata
 .kotlin
-/release.sh
-/publish-snapshot.sh
+/publish-and-release.sh
+/snapshot.sh
+/publish-only.sh
