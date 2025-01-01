@@ -9,7 +9,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
-object UUIDSerializer : KSerializer<Uuid> {
+object UuidSerializer : KSerializer<Uuid> {
     override val descriptor = PrimitiveSerialDescriptor("com.mimetis.dotmim.sync-kotlin.uuid.Uuid", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): Uuid {

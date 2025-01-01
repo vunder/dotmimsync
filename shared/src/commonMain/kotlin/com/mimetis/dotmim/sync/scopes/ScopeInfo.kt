@@ -1,6 +1,6 @@
 package com.mimetis.dotmim.sync.scopes
 
-import com.mimetis.dotmim.sync.UUIDSerializer
+import com.mimetis.dotmim.sync.UuidSerializer
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import kotlinx.serialization.SerialName
@@ -25,7 +25,7 @@ class ScopeInfo(
          * Id of the scope owner
          */
         @SerialName("id")
-        @Serializable(with = UUIDSerializer::class)
+        @Serializable(with = UuidSerializer::class)
         var id: Uuid,
 
         /**

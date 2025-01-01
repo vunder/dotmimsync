@@ -13,14 +13,14 @@ import kotlin.uuid.Uuid
 @Serializable
 class SyncContext(
     @SerialName("id")
-    @Serializable(with = UUIDSerializer::class)
+    @Serializable(with = UuidSerializer::class)
     var sessionId: Uuid,
 
     @SerialName("sn")
     var scopeName: String,
 
     @SerialName("csid")
-    @Serializable(with = UUIDSerializer::class)
+    @Serializable(with = UuidSerializer::class)
     var clientScopeId: Uuid? = null,
 
     @SerialName("typ")

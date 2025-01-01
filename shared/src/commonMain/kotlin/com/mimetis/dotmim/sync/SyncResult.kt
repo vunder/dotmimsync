@@ -17,7 +17,7 @@ class SyncResult(
     /**
      * Current Session, in progress
      */
-    @Serializable(with = UUIDSerializer::class)
+    @Serializable(with = UuidSerializer::class)
     var sessionId: Uuid,
 
     /**
