@@ -1,13 +1,16 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
     id 'kotlinx-serialization'
     id 'maven-publish'
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
-group = 'com.github.vunder'
-
 android {
+    namespace = "com.mimetis.dotmimsync"
     compileSdk rootProject.ext.compileSdk
     buildToolsVersion rootProject.ext.buildToolsVersion
 
@@ -35,38 +38,93 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_18.toString()
     }
+
+//    publishing {
+//        singleVariant("release") {
+//            withSourcesJar()
+//        }
+//    }
 }
 
 dependencies {
     // Serialization
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0'
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0'
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.6.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3'
     // Ktor
     implementation("io.ktor:ktor-client-core:3.0.3")
     implementation("io.ktor:ktor-client-okhttp:3.0.3")
     implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
-    implementation("org.slf4j:slf4j-simple:2.0.9")
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.powermock:powermock-module-junit4:2.0.9'
     testImplementation 'org.powermock:powermock-api-mockito2:2.0.9'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }
 
-publishing {
-    publications {
-        library(MavenPublication) {
-            groupId "com.github.vunder"//packageName
-            artifactId "dotmimsync"//project.getName()
-            version = rootProject.ext.libraryVersion
-            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
+afterEvaluate {
+    publishing {
+        repositories {
+            maven {
+                name = "BuildDir"
+                url = uri(rootProject.layout.buildDirectory.dir("maven-repo"))
+            }
+        }
 
-            println "publishing: " + groupId
-            println "publishing: " + artifactId
-            println "publishing: " + version
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId "io.github.vunder"//packageName
+                artifactId "dotmimsync"//project.getName()
+                version = rootProject.ext.libraryVersion
+
+//            afterEvaluate {
+//                from(components["release"])
+//            }
+//            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
+
+                pom {
+                    name = "dotmimsync"
+                    description = "Android (Kotlin) port for Dotmim.Sync C# library (https://dotmimsync.readthedocs.io/)"
+                    url = "https://github.com/vunder/dotmimsync"
+
+                    licenses {
+                        license {
+                            name = "MIT License"
+                            url = "https://mit-license.org/"
+                            distribution = "https://mit-license.org/"
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = "vunder"
+                            name = "Aleksei Starchikov"
+                            email = "aleksei.starchikov@outlook.com"
+                        }
+                    }
+
+                    issueManagement {
+                        system = "GitHub"
+                        url = "https://github.com/vunder/dotmimsync/issues"
+                    }
+
+                    scm {
+                        url = "https://github.com/vunder/dotmimsync"
+                    }
+                }
+            }
         }
     }
+    tasks.named("signReleasePublication").configure {
+        dependsOn("publishMavenPublicationToMavenCentralRepository")
+    }
+}
+
+mavenPublishing {
+    configure(new AndroidSingleVariantLibrary("release", true, true))
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, false)
+    signAllPublications()
 }
