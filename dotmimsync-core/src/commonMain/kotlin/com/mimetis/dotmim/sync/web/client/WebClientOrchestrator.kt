@@ -1,8 +1,19 @@
 package com.mimetis.dotmim.sync.web.client
 
-import android.util.Log
-import com.mimetis.dotmim.sync.*
-import com.mimetis.dotmim.sync.args.*
+import com.mimetis.dotmim.sync.DbSyncAdapter
+import com.mimetis.dotmim.sync.Progress
+import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.SyncOptions
+import com.mimetis.dotmim.sync.Tuple
+import com.mimetis.dotmim.sync.args.HttpBatchesDownloadedArgs
+import com.mimetis.dotmim.sync.args.HttpBatchesDownloadingArgs
+import com.mimetis.dotmim.sync.args.HttpGettingSchemaRequestArgs
+import com.mimetis.dotmim.sync.args.HttpGettingSchemaResponseArgs
+import com.mimetis.dotmim.sync.args.HttpGettingScopeRequestArgs
+import com.mimetis.dotmim.sync.args.HttpGettingServerChangesRequestArgs
+import com.mimetis.dotmim.sync.args.HttpGettingServerChangesResponseArgs
+import com.mimetis.dotmim.sync.args.HttpSendingClientChangesRequestArgs
+import com.mimetis.dotmim.sync.args.ProgressArgs
 import com.mimetis.dotmim.sync.batch.BatchInfo
 import com.mimetis.dotmim.sync.batch.BatchPartInfo
 import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
@@ -17,11 +28,13 @@ import com.mimetis.dotmim.sync.serialization.Converter
 import com.mimetis.dotmim.sync.set.ContainerSet
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
+import com.mimetis.dotmim.sync.utcNow
 import io.ktor.client.HttpClient
 import java.io.File
 import java.net.URL
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -33,7 +46,7 @@ class WebClientOrchestrator(
     private val converter: Converter? = null,
     private val maxDownladingDegreeOfParallelism: Int = 4
 ) : RemoteOrchestrator(FancyCoreProvider(), SyncOptions(), SyncSetup()) {
-    private val TAG = this::class.java.simpleName
+//    private val TAG = this::class.java.simpleName
     private val service = DotmimServiceImpl(serviceAddress, client)
 
     /**
@@ -164,7 +177,7 @@ class WebClientOrchestrator(
 
         serverBatchInfo.batchPartsInfo?.forEach { bpi ->
             // Create the message enveloppe
-            Log.d(TAG, "CLIENT bpi.FileName:${bpi.fileName}. bpi.Index:${bpi.index}")
+//            Log.d(TAG, "CLIENT bpi.FileName:${bpi.fileName}. bpi.Index:${bpi.index}")
 
             val changesToSend3 = HttpMessageGetMoreChangesRequest(ctx, bpi.index)
 //            var serializer3 = this.options.SerializerFactory.GetSerializer<HttpMessageGetMoreChangesRequest>()

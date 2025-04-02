@@ -44,7 +44,9 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.androidx.sqlite.bundled)
 
-            implementation(libs.bundles.ktor)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
 
             implementation(libs.gradle.simple)
         }
@@ -62,7 +64,7 @@ kotlin {
 
 android {
     namespace = "com.mimetis.dotmimsync"
-    compileSdk = 34
+    compileSdk = 35
     defaultConfig {
         minSdk = 26
     }
