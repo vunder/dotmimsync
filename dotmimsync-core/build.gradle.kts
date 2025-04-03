@@ -48,6 +48,8 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
 
 //            implementation(libs.gradle.simple)
+            implementation(libs.kotlin.bignum)
+            implementation(libs.kotlin.bignum.serialization)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
