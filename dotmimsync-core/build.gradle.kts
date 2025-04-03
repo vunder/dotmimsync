@@ -40,7 +40,6 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.jetbrains.serialization.core)
             implementation(libs.jetbrains.serialization.json)
-//            implementation(libs.jetbrains.serialization.core.jvm)
             implementation(libs.kotlinx.datetime)
             implementation(libs.androidx.sqlite.bundled)
 
@@ -48,7 +47,7 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
 
-            implementation(libs.gradle.simple)
+//            implementation(libs.gradle.simple)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
@@ -90,7 +89,7 @@ publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = "1.1.0"
+        version = "1.1.0-kmp.alpha0"
 
         pom {
             name = "dotmimsync"
