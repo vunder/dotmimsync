@@ -1,13 +1,13 @@
 package com.mimetis.dotmim.sync.set
 
-import android.database.Cursor
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
+import androidx.sqlite.SQLiteStatement
 import com.mimetis.dotmim.sync.DataRowState
 import com.mimetis.dotmim.sync.enumerations.SyncDirection
 import com.mimetis.dotmim.sync.sqlite.CursorHelper.getDataType
 import com.mimetis.dotmim.sync.sqlite.CursorHelper.getValue
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * Represents a table schema
@@ -81,16 +81,16 @@ class SyncTable(
         this.rows.ensureRows(this)
     }
 
-    fun load(cursor: Cursor, filter: ((cursor: Cursor) -> Boolean)? = null) {
-        val readerFieldCount = cursor.columnCount
-        if (readerFieldCount == 0 || cursor.count == 0)
+    fun load(cursor: SQLiteStatement, filter: ((cursor: SQLiteStatement) -> Boolean)? = null) {
+        val readerFieldCount = cursor.getColumnCount()
+        if (readerFieldCount == 0)
             return
 
-        while (cursor.moveToNext()) {
+        while (cursor.step()) {
             if (this.columns?.isEmpty() == true) {
                 for (i in 0 until readerFieldCount) {
                     val columnName = cursor.getColumnName(i)
-                    val columnType = cursor.getType(i).getDataType()
+                    val columnType = cursor.getColumnType(i).getDataType()
                     this.columns?.add(SyncColumn(columnName, columnType))
                 }
             }

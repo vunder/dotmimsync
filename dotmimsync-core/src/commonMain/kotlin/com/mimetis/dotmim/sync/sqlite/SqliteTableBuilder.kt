@@ -1,6 +1,7 @@
 package com.mimetis.dotmim.sync.sqlite
 
-import android.database.sqlite.SQLiteDatabase
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.execSQL
 import com.mimetis.dotmim.sync.builders.DbTableBuilder
 import com.mimetis.dotmim.sync.builders.DbTriggerType
 import com.mimetis.dotmim.sync.builders.ParserName
@@ -10,23 +11,22 @@ import com.mimetis.dotmim.sync.set.SyncColumn
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.DbType
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.util.*
-import kotlin.collections.ArrayList
+import com.mimetis.dotmimsync.currentPlatform
 
 class SqliteTableBuilder(
     tableDescription: SyncTable,
     tableName: ParserName,
     trackingTableName: ParserName,
     setup: SyncSetup,
-    private val database: SQLiteDatabase
+    private val database: SQLiteConnection
 ) : DbTableBuilder(tableDescription, tableName, trackingTableName, setup) {
     override fun existsTable(): Boolean {
         val tbl = this.tableName.unquoted().toString()
-        database.rawQuery(
-            "select count(name) from sqlite_master where name = ? AND type='table'",
-            arrayOf(tbl)
+        database.prepare(
+            "select count(name) from sqlite_master where name = ? AND type='table'"
         ).use { cursor ->
-            return cursor.moveToNext() && cursor.getInt(0) > 0
+            cursor.bindText(1, tbl)
+            return cursor.step() && cursor.getInt(0) > 0
         }
     }
 
@@ -70,13 +70,14 @@ class SqliteTableBuilder(
     override fun getPrimaryKeys(): List<SyncColumn> {
         val unquotedTableName = this.tableName.unquoted().toString()
         val keys = SyncTable(unquotedTableName, "")
-        database.rawQuery(
+        database.prepare(
             // may not work on old Android
             //"SELECT * FROM pragma_table_info('${unquotedTableName}') where pk = 1;",
-            "pragma table_info('${unquotedTableName}');",
-            null
+            "pragma table_info('${unquotedTableName}');"
         ).use { cursor ->
-            keys.load(cursor) { c -> c.getInt(c.getColumnIndex("pk")) == 1 }
+            val columns = cursor.getColumnNames()
+            cursor.step()
+            keys.load(cursor) { c -> c.getInt(columns.indexOf("pk")) == 1 }
         }
 
         val lstKeys = ArrayList<SyncColumn>()
@@ -97,7 +98,7 @@ class SqliteTableBuilder(
         val relationsTable =
         // may not work on old Android
 //            database.rawQuery("SELECT * FROM pragma_foreign_key_list('$unquotedTableName')", null)
-            database.rawQuery("pragma foreign_key_list('$unquotedTableName')", null)
+            database.prepare("pragma foreign_key_list('$unquotedTableName')")
                 .use { cursor ->
                     SyncTable(unquotedTableName).apply {
                         load(cursor)
@@ -245,11 +246,11 @@ class SqliteTableBuilder(
 
     override fun existsTrackingTable(): Boolean {
         val tbl = this.trackingTableName.unquoted().toString()
-        database.rawQuery(
-            "select count(*) from sqlite_master where name = ? AND type='table'",
-            arrayOf(tbl)
+        database.prepare(
+            "select count(*) from sqlite_master where name = ? AND type='table'"
         ).use { cursor ->
-            return cursor.moveToNext() && cursor.getInt(0) > 0
+            cursor.bindText(1, tbl)
+            return cursor.step() && cursor.getInt(0) > 0
         }
     }
 
@@ -331,11 +332,11 @@ class SqliteTableBuilder(
         val commandTriggerName = this.getTriggerCommandName(triggerType)
         val triggerName = ParserName.parse(commandTriggerName).toString()
 
-        database.rawQuery(
-            "select count(*) from sqlite_master where name = ? AND type='trigger'",
-            arrayOf(triggerName)
+        database.prepare(
+            "select count(*) from sqlite_master where name = ? AND type='trigger'"
         ).use { cursor ->
-            return cursor.moveToNext() && cursor.getInt(0) > 0
+            cursor.bindText(1, triggerName)
+            return cursor.step() && cursor.getInt(0) > 0
         }
     }
 
@@ -355,14 +356,14 @@ class SqliteTableBuilder(
 
     override fun existsTriggerCommand(triggerType: DbTriggerType): Boolean {
         val commandTriggerName =
-            String.format(getTriggerCommandName(triggerType), tableName.unquoted().toString())
+            currentPlatform.formatString(getTriggerCommandName(triggerType), tableName.unquoted().toString())
         val triggerName = ParserName.parse(commandTriggerName).toString()
 
-        return database.rawQuery(
-            "select count(*) from sqlite_master where name = @triggerName AND type='trigger'",
-            arrayOf(triggerName)
+        return database.prepare(
+            "select count(*) from sqlite_master where name = @triggerName AND type='trigger'"
         ).use { cursor ->
-            cursor.moveToNext() && cursor.getInt(0) > 0
+            cursor.bindText(1, triggerName)
+            cursor.step() && cursor.getInt(0) > 0
         }
     }
 
@@ -381,18 +382,9 @@ class SqliteTableBuilder(
         val tsuf = if (this.setup.triggersSuffix.isNotBlank()) this.setup.triggersSuffix else ""
 
         triggersNames = hashMapOf(
-            DbTriggerType.Insert to String.format(
-                "[%s_insert_trigger]",
-                "${tpref}${tableName.unquoted().normalized()}${tsuf}"
-            ),
-            DbTriggerType.Update to String.format(
-                "[%s_update_trigger]",
-                "${tpref}${tableName.unquoted().normalized()}${tsuf}"
-            ),
-            DbTriggerType.Delete to String.format(
-                "[%s_delete_trigger]",
-                "${tpref}${tableName.unquoted().normalized()}${tsuf}"
-            )
+            DbTriggerType.Insert to "[${tpref}${tableName.unquoted().normalized()}${tsuf}_insert_trigger]",
+            DbTriggerType.Update to "[${tpref}${tableName.unquoted().normalized()}${tsuf}_update_trigger]",
+            DbTriggerType.Delete to "[${tpref}${tableName.unquoted().normalized()}${tsuf}_delete_trigger]",
         )
     }
 
@@ -420,7 +412,9 @@ class SqliteTableBuilder(
 //        val commandColumn = "SELECT * FROM pragma_table_info('$unquotedTableName');"
         val commandColumn = "pragma table_info('$unquotedTableName');"
         val syncTable = SyncTable(unquotedTableName, "")
-        database.rawQuery(commandColumn, null).use { cursor -> syncTable.load(cursor) }
+        database.prepare(commandColumn).use { cursor ->
+            cursor.step()
+            syncTable.load(cursor) }
         return syncTable
     }
 
@@ -561,7 +555,7 @@ class SqliteTableBuilder(
         if (tn.contains("("))
             tn = tn.substring(0, tn.indexOf("("));
 
-        when (tn.lowercase(Locale.getDefault())) {
+        when (tn.lowercase()) {
             "bit",
             "integer",
             "bigint" ->
