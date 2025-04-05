@@ -1,6 +1,5 @@
 [versions]
 agp = "8.7.2"
-gradle-simple = "1.0"
 kotlin = "2.1.10"
 serialization = "1.8.0"
 kotlinx-datetime = "0.6.2"
@@ -10,7 +9,6 @@ vanniktech = "0.31.0"
 bignum = "0.3.10"
 
 [libraries]
-gradle-simple = { module = "com.github.jitpack:gradle-simple", version.ref = "gradle-simple" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 jetbrains-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization" }

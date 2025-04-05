@@ -1,10 +1,11 @@
 package com.mimetis.dotmim.sync.set
 
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.mimetis.dotmim.sync.setup.DbType
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.math.BigDecimal
-import java.util.Date
+import kotlin.reflect.KClass
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -74,7 +75,7 @@ class SyncColumn(
         @SerialName("dv")
         var defaultValue: String? = null
 ) : SyncNamedItem<SyncColumn>() {
-    constructor(columnName: String, type: Class<*>) : this(columnName) {
+    constructor(columnName: String, type: KClass<*>) : this(columnName) {
         this.setType(type)
     }
 
@@ -83,50 +84,50 @@ class SyncColumn(
     /**
      * Compress string representation of the DataType to be more concise in the serialized stream
      */
-    private fun getAssemblyQualifiedName(valueType: Class<*>): String =
+    private fun getAssemblyQualifiedName(valueType: KClass<*>): String =
             when (valueType) {
-                Boolean::class.java ->
+                Boolean::class ->
                     "1"
-                Byte::class.java ->
+                Byte::class ->
                     "2"
-                Char::class.java ->
+                Char::class ->
                     "3"
-                Double::class.java ->
+                Double::class ->
                     "4"
-                Float::class.java ->
+                Float::class ->
                     "5"
-                Int::class.java ->
+                Int::class ->
                     "6"
-                Long::class.java ->
+                Long::class ->
                     "7"
-                Short::class.java ->
+                Short::class ->
                     "8"
-                UInt::class.java ->
+                UInt::class ->
                     "9"
-                ULong::class.java ->
+                ULong::class ->
                     "10"
-                UShort::class.java ->
+                UShort::class ->
                     "11"
-                ByteArray::class.java ->
+                ByteArray::class ->
                     "12"
-                Date::class.java ->
+                LocalDateTime::class ->
                     "13"
 //                 DateTimeOffset::class.java ->
 //                    "14"
-                BigDecimal::class.java ->
+                BigDecimal::class ->
                     "15"
-                Uuid::class.java ->
+                Uuid::class ->
                     "16"
-                String::class.java ->
+                String::class ->
                     "17"
 //                    SByte::class.java ->
 //                        "18"
 //                    TimeSpan::class.java ->
 //                        "19"
-                CharArray::class.java ->
+                CharArray::class ->
                     "20"
                 else ->
-                    valueType.name
+                    valueType.simpleName ?: valueType.toString()
             }
 
     /**
@@ -225,53 +226,53 @@ class SyncColumn(
     /**
      * Get DataType from compressed string type
      */
-    fun getDataType(): Class<*> =
+    fun getDataType(): KClass<*> =
             when (this.dataType) {
                 "1" ->
-                    Boolean::class.java
+                    Boolean::class
                 "2" ->
-                    Byte::class.java
+                    Byte::class
                 "3" ->
-                    Char::class.java
+                    Char::class
                 "4" ->
-                    Double::class.java
+                    Double::class
                 "5" ->
-                    Float::class.java
+                    Float::class
                 "6" ->
-                    Int::class.java
+                    Int::class
                 "7" ->
-                    Long::class.java
+                    Long::class
                 "8" ->
-                    Short::class.java
+                    Short::class
                 "9" ->
-                    UInt::class.java
+                    UInt::class
                 "10" ->
-                    ULong::class.java
+                    ULong::class
                 "11" ->
-                    UShort::class.java
+                    UShort::class
                 "12" ->
-                    ByteArray::class.java
+                    ByteArray::class
                 "13" ->
-                    Date::class.java
+                    LocalDateTime::class
 //                "14"->
 //                    DateTimeOffset::class.java
                 "15" ->
-                    BigDecimal::class.java
+                    BigDecimal::class
                 "16" ->
-                    Uuid::class.java
+                    Uuid::class
                 "17" ->
-                    String::class.java
+                    String::class
 //                "18"->
 //                    SByte::class.java
 //                "19"->
 //                    TimeSpan::class.java
                 "20" ->
-                    CharArray::class.java
+                    CharArray::class
                 else ->
-                    Class.forName(this.dataType)
+                    Any::class//KClass.forName(this.dataType)
             }
 
-    fun setType(type: Class<*>) {
+    fun setType(type: KClass<*>) {
         this.dataType = getAssemblyQualifiedName(type)
         this.dbType = coerceDbType().value
     }
@@ -281,6 +282,6 @@ class SyncColumn(
 
     companion object {
         inline fun <reified T : Any> create(columnName: String): SyncColumn =
-                SyncColumn(columnName, T::class.java)
+                SyncColumn(columnName, T::class)
     }
 }
