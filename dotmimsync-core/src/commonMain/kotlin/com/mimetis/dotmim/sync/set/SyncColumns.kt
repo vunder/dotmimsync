@@ -54,6 +54,8 @@ class SyncColumns() : CustomList<SyncColumn>() {
                 )
             }
         }
+
+    fun addAll(items: SyncColumns) = internalList.addAll(items)
 }
 
 @OptIn(ExperimentalSerializationApi::class)

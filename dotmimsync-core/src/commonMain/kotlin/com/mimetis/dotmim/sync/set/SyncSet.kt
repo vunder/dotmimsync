@@ -1,9 +1,8 @@
 package com.mimetis.dotmim.sync.set
 
+import com.mimetis.dotmim.sync.setup.SyncSetup
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.io.Closeable
 
 @Serializable
 class SyncSet(

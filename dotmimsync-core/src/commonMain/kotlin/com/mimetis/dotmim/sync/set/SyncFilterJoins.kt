@@ -3,9 +3,19 @@ package com.mimetis.dotmim.sync.set
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import com.mimetis.dotmim.sync.ArrayListLikeSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.listSerialDescriptor
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
 
 @Serializable(with = SyncFilterJoinsSerializer::class)
-class SyncFilterJoins : ArrayList<SyncFilterJoin>() {
+class SyncFilterJoins() : CustomList<SyncFilterJoin>() {
+
+    internal constructor(items: List<SyncFilterJoin>) : this() {
+        internalList.addAll(items)
+    }
+
     /**
      * Filter's schema
      */
@@ -22,4 +32,39 @@ class SyncFilterJoins : ArrayList<SyncFilterJoin>() {
     }
 }
 
-object SyncFilterJoinsSerializer : ArrayListLikeSerializer<SyncFilterJoins, SyncFilterJoin>(SyncFilterJoin.serializer())
+@OptIn(ExperimentalSerializationApi::class)
+object SyncFilterJoinsSerializer : ArrayListLikeSerializer<SyncFilterJoins, SyncFilterJoin>(SyncFilterJoin.serializer()) {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncColumn>()
+
+    override fun deserialize(decoder: Decoder): SyncFilterJoins {
+        val items = ArrayList<SyncFilterJoin>()
+
+        val compositeDecoder = decoder.beginStructure(descriptor)
+
+        if (compositeDecoder.decodeSequentially()) {
+            val size = compositeDecoder.decodeCollectionSize(descriptor)
+            for (i in 0 until size) {
+                val element = compositeDecoder.decodeSerializableElement(
+                    SyncFilterJoinsSerializer.elementSerializer.descriptor,
+                    i,
+                    SyncFilterJoinsSerializer.elementSerializer
+                )
+                items.add(element)
+            }
+        } else {
+            while (true) {
+                val index = compositeDecoder.decodeElementIndex(SyncFilterJoinsSerializer.elementSerializer.descriptor)
+                if (index == CompositeDecoder.DECODE_DONE) break
+                val element = compositeDecoder.decodeSerializableElement(
+                    SyncFilterJoinsSerializer.elementSerializer.descriptor,
+                    index,
+                    SyncFilterJoinsSerializer.elementSerializer
+                )
+                items.add(element)
+            }
+        }
+        compositeDecoder.endStructure(descriptor)
+
+        return SyncFilterJoins(items)
+    }
+}

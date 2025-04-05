@@ -1,15 +1,24 @@
 package com.mimetis.dotmim.sync.set
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import com.mimetis.dotmim.sync.ArrayListLikeSerializer
 import com.mimetis.dotmim.sync.DataRowState
 import com.mimetis.dotmim.sync.SyncTypeConverter
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.listSerialDescriptor
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
 
 @Serializable(with = SyncRowsSerializer::class)
-class SyncRows() : ArrayList<SyncRow>() {
+class SyncRows() : CustomList<SyncRow>() {
     @Transient
     var table: SyncTable? = null
+
+    internal constructor(items: List<SyncRow>) : this() {
+        internalList.addAll(items)
+    }
 
     constructor(table: SyncTable) : this() {
         this.table = table
@@ -29,7 +38,8 @@ class SyncRows() : ArrayList<SyncRow>() {
             val itemArray = Array<Any?>(length) {}
 
             if (!checkType) {
-                System.arraycopy(row, 1, itemArray, 0, length)
+//                System.arraycopy(row, 1, itemArray, 0, length)
+                row.copyInto(itemArray, 0, 1, length - 1)
             } else {
                 // Get only writable columns
                 val columns = table!!.getMutableColumnsWithPrimaryKeys()
@@ -40,7 +50,7 @@ class SyncRows() : ArrayList<SyncRow>() {
 
                     if (value == null)
                         itemArray[col.ordinal] = null
-                    else if (value::class.java != colDataType)
+                    else if (value::class != colDataType)
                         itemArray[col.ordinal] =
                             SyncTypeConverter.tryConvertTo(value, col.getDataType())
                     else
@@ -49,7 +59,7 @@ class SyncRows() : ArrayList<SyncRow>() {
             }
 
             //Array.Copy(row, 1, itemArray, 0, length);
-            val state = DataRowState.values().first { it.value == row[0] as Int }
+            val state = DataRowState.entries.first { it.value == row[0] as Int }
 
             val schemaRow = SyncRow(this.table!!, itemArray, state)
             this.add(schemaRow)
@@ -68,4 +78,40 @@ class SyncRows() : ArrayList<SyncRow>() {
     }
 }
 
-object SyncRowsSerializer : ArrayListLikeSerializer<SyncRows, SyncRow>(SyncRow.serializer())
+@OptIn(ExperimentalSerializationApi::class)
+object SyncRowsSerializer : ArrayListLikeSerializer<SyncRows, SyncRow>(SyncRow.serializer()) {
+    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncRow>()
+
+    override fun deserialize(decoder: Decoder): SyncRows {
+        val items = ArrayList<SyncRow>()
+
+        val compositeDecoder = decoder.beginStructure(descriptor)
+
+        if (compositeDecoder.decodeSequentially()) {
+            val size = compositeDecoder.decodeCollectionSize(descriptor)
+            for (i in 0 until size) {
+                val element = compositeDecoder.decodeSerializableElement(
+                    elementSerializer.descriptor,
+                    i,
+                    elementSerializer
+                )
+                items.add(element)
+            }
+        } else {
+            while (true) {
+                val index =
+                    compositeDecoder.decodeElementIndex(elementSerializer.descriptor)
+                if (index == CompositeDecoder.DECODE_DONE) break
+                val element = compositeDecoder.decodeSerializableElement(
+                    elementSerializer.descriptor,
+                    index,
+                    elementSerializer
+                )
+                items.add(element)
+            }
+        }
+        compositeDecoder.endStructure(descriptor)
+
+        return SyncRows(items)
+    }
+}
