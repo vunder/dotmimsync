@@ -1,11 +1,10 @@
 package com.mimetis.dotmim.sync
 
-import android.database.Cursor
+import androidx.sqlite.SQLiteStatement
 import com.mimetis.dotmim.sync.set.SyncRow
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.io.Closeable
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -13,12 +12,12 @@ import kotlin.uuid.Uuid
 abstract class DbSyncAdapter(
     val tableDescription: SyncTable,
     val setup: SyncSetup
-) : Closeable {
-    abstract fun getSelectInitializedChangesWithFilters(): Cursor
-    abstract fun getSelectInitializedChanges(): Cursor
-    abstract fun getSelectChangesWithFilters(lastTimestamp: Long?): Cursor
-    abstract fun getSelectChanges(lastTimestamp: Long?): Cursor
-    abstract fun getSelectRow(primaryKeyRow: SyncRow): Cursor
+) : AutoCloseable {
+    abstract fun getSelectInitializedChangesWithFilters(): SQLiteStatement
+    abstract fun getSelectInitializedChanges(): SQLiteStatement
+    abstract fun getSelectChangesWithFilters(lastTimestamp: Long?): SQLiteStatement
+    abstract fun getSelectChanges(lastTimestamp: Long?): SQLiteStatement
+    abstract fun getSelectRow(primaryKeyRow: SyncRow): SQLiteStatement
 
     abstract fun enableConstraints()
     abstract fun disableConstraints()

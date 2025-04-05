@@ -3,7 +3,7 @@ package com.mimetis.dotmim.sync.sqlite
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
-import android.util.Base64
+import androidx.sqlite.SQLiteStatement
 import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.builders.ParserName
 import com.mimetis.dotmim.sync.set.SyncColumn
@@ -13,10 +13,12 @@ import com.mimetis.dotmim.sync.setup.DbType
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class, ExperimentalEncodingApi::class)
 class SqliteSyncAdapter(
     tableDescription: SyncTable,
     private val tableName: ParserName,
@@ -654,10 +656,10 @@ class SqliteSyncAdapter(
         sqliteMetadataQuery.close()
     }
 
-    override fun getSelectInitializedChangesWithFilters(): Cursor =
+    override fun getSelectInitializedChangesWithFilters(): SQLiteStatement =
         getSelectInitializedChanges()
 
-    override fun getSelectChangesWithFilters(lastTimestamp: Long?): Cursor =
+    override fun getSelectChangesWithFilters(lastTimestamp: Long?): SQLiteStatement =
         getSelectChanges(lastTimestamp)
 
     private fun fillParametersFromColumns(
@@ -686,7 +688,7 @@ class SqliteSyncAdapter(
 
         return when (column.getDbType()) {
             DbType.Binary ->
-                Base64.decode(value.toString(), Base64.NO_WRAP)
+                Base64.decode(value.toString())
             DbType.DateTime ->
 //                dateFormat.parse(value.toString().replace("T", " "))
                 value.toString().replace("T", " ")
@@ -702,7 +704,7 @@ class SqliteSyncAdapter(
 
         return when (column.getDbType()) {
             DbType.Binary ->
-                "X'" + Base64.decode(value.toString(), Base64.NO_WRAP)
+                "X'" + Base64.decode(value.toString())
                     .joinToString("") {
                         val x = it.toString(16)
                         if (x.length < 2)
@@ -710,7 +712,7 @@ class SqliteSyncAdapter(
                         else
                             x
                     }
-                    .uppercase(Locale.getDefault()) + "'"
+                    .uppercase() + "'"
             DbType.DateTime ->
                 value.toString().replace("T", " ")
             DbType.Guid ->
