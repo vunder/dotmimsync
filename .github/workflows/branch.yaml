@@ -2,7 +2,10 @@ name: KMP branch build
 
 on:
   push:
-    branches: main
+    branches:
+      - !main
+      - '!release/**'
+  workflow_dispatch:
 
 jobs:
   build:
