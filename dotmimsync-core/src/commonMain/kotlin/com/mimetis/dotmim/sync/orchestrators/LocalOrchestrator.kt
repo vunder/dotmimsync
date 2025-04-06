@@ -1,6 +1,15 @@
 package com.mimetis.dotmim.sync.orchestrators
 
-import com.mimetis.dotmim.sync.*
+import com.mimetis.dotmim.sync.CoreProvider
+import com.mimetis.dotmim.sync.DbSyncAdapter
+import com.mimetis.dotmim.sync.MissingClientScopeInfoException
+import com.mimetis.dotmim.sync.MissingLocalOrchestratorSchemaException
+import com.mimetis.dotmim.sync.MissingTablesException
+import com.mimetis.dotmim.sync.MissingTrackingTableException
+import com.mimetis.dotmim.sync.Progress
+import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.SyncOptions
+import com.mimetis.dotmim.sync.SyncVersion
 import com.mimetis.dotmim.sync.SyncVersion.major
 import com.mimetis.dotmim.sync.SyncVersion.toVersionInt
 import com.mimetis.dotmim.sync.args.ProgressArgs
@@ -13,12 +22,16 @@ import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
 import com.mimetis.dotmim.sync.enumerations.SyncProvision
 import com.mimetis.dotmim.sync.enumerations.SyncStage
 import com.mimetis.dotmim.sync.enumerations.SyncWay
-import com.mimetis.dotmim.sync.messages.*
+import com.mimetis.dotmim.sync.messages.DatabaseChangesApplied
+import com.mimetis.dotmim.sync.messages.DatabaseChangesSelected
+import com.mimetis.dotmim.sync.messages.DatabaseMetadatasCleaned
+import com.mimetis.dotmim.sync.messages.MessageApplyChanges
+import com.mimetis.dotmim.sync.messages.MessageGetChangesBatch
 import com.mimetis.dotmim.sync.scopes.ScopeInfo
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.util.*
+import com.mimetis.dotmim.sync.utcNow
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -395,7 +408,7 @@ class LocalOrchestrator(
      */
     fun provision(
         schema: SyncSet,
-        provision: EnumSet<SyncProvision>,
+        provision: Set<SyncProvision>,
         overwrite: Boolean = false,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>?
@@ -437,7 +450,7 @@ class LocalOrchestrator(
      * Deprovision the orchestrator database based on the provision enumeration
      */
     open fun deprovision(
-        provision: EnumSet<SyncProvision>,
+        provision: Set<SyncProvision>,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>? = null
     ): Boolean {
@@ -463,7 +476,7 @@ class LocalOrchestrator(
      */
     fun deprovision(
         schema: SyncSet,
-        provision: EnumSet<SyncProvision>,
+        provision: Set<SyncProvision>,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>? = null
     ): Boolean {

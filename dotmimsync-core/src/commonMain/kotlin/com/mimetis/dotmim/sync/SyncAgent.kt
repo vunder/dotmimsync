@@ -1,6 +1,5 @@
 package com.mimetis.dotmim.sync
 
-import android.util.Log
 import com.mimetis.dotmim.sync.args.ProgressArgs
 import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
 import com.mimetis.dotmim.sync.enumerations.SyncProvision
@@ -11,38 +10,41 @@ import com.mimetis.dotmim.sync.parameter.SyncParameters
 import com.mimetis.dotmim.sync.scopes.ServerScopeInfo
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.util.*
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 class SyncAgent(
-        clientProvider: CoreProvider,
-        val remoteOrchestrator: RemoteOrchestrator,
-        val options: SyncOptions,
-        val setup: SyncSetup,
-        private val scopeName: String = SyncOptions.DefaultScopeName
+    clientProvider: CoreProvider,
+    val remoteOrchestrator: RemoteOrchestrator,
+    val options: SyncOptions,
+    val setup: SyncSetup,
+    private val scopeName: String = SyncOptions.DefaultScopeName
 ) {
-    val localOrchestrator: LocalOrchestrator = LocalOrchestrator(clientProvider, options, setup, scopeName)
+    val localOrchestrator: LocalOrchestrator =
+        LocalOrchestrator(clientProvider, options, setup, scopeName)
     private lateinit var schema: SyncSet
     val parameters: SyncParameters = SyncParameters()
 
-    suspend fun synchronize(syncType: SyncType = SyncType.Normal, progress: Progress<ProgressArgs>? = null): SyncResult {
+    suspend fun synchronize(
+        syncType: SyncType = SyncType.Normal,
+        progress: Progress<ProgressArgs>? = null
+    ): SyncResult {
         val startTime = utcNow()
         var completeTime = utcNow()
 
         val context = SyncContext(
-                sessionId = Uuid.random(),
-                scopeName = this.scopeName,
-                parameters = this.parameters,
-                syncType = syncType
+            sessionId = Uuid.random(),
+            scopeName = this.scopeName,
+            parameters = this.parameters,
+            syncType = syncType
         )
 
         // Result, with sync results stats.
         val result = SyncResult(
-                context.sessionId,
-                startTime,
-                completeTime,
+            context.sessionId,
+            startTime,
+            completeTime,
         )
 
         try {
@@ -75,8 +77,19 @@ class SyncAgent(
                     this.localOrchestrator.setup = serverScopeInfo.setup
 
                 // Provision local database
-                val provision = EnumSet.of(SyncProvision.Table, SyncProvision.TrackingTable, SyncProvision.StoredProcedures, SyncProvision.Triggers)
-                this.localOrchestrator.provision(serverScopeInfo.schema!!, provision, false, clientScopeInfo, progress)
+                val provision = HashSet<SyncProvision>().apply {
+                    add(SyncProvision.Table)
+                    add(SyncProvision.TrackingTable)
+                    add(SyncProvision.StoredProcedures)
+                    add(SyncProvision.Triggers)
+                }
+                this.localOrchestrator.provision(
+                    serverScopeInfo.schema!!,
+                    provision,
+                    false,
+                    clientScopeInfo,
+                    progress
+                )
 
                 // Set schema for agent, just to let the opportunity to user to use it.
                 this.schema = serverScopeInfo.schema!!
@@ -97,7 +110,8 @@ class SyncAgent(
                 val hasSameOptions = clientScopeInfo.setup!!.hasSameOptions(this.setup)
 
                 // compare local setup strucutre with remote structure
-                val hasSameStructure = clientScopeInfo.setup!!.hasSameStructure(serverScopeInfo.setup)
+                val hasSameStructure =
+                    clientScopeInfo.setup!!.hasSameStructure(serverScopeInfo.setup)
 
                 if (hasSameStructure) {
                     // Sett schema & setup
@@ -121,7 +135,11 @@ class SyncAgent(
 
                 // If one of the comparison is false, we make a migration
                 if (!hasSameOptions || !hasSameStructure) {
-                    this.localOrchestrator.migration(clientScopeInfo.setup!!, serverScopeInfo.schema!!, progress)
+                    this.localOrchestrator.migration(
+                        clientScopeInfo.setup!!,
+                        serverScopeInfo.schema!!,
+                        progress
+                    )
                     clientScopeInfo.setup = this.setup
                     clientScopeInfo.schema = serverScopeInfo.schema
                 }
@@ -138,7 +156,7 @@ class SyncAgent(
                 // if client does not change SyncType to Reinitialize / ReinitializeWithUpload on SyncInterceptor, we raise an error
                 // otherwise, we are outdated, but we can continue, because we have a new mode.
                 if (isOutDated)
-                    Log.w(TAG, "Client id outdated, but we change mode to ${context.syncType}")
+                    println("[$TAG]: Client id outdated, but we change mode to ${context.syncType}")
             }
 
             context.progressPercentage = 0.1
@@ -151,16 +169,25 @@ class SyncAgent(
                 clientScopeInfo.lastServerSyncTimestamp = null
 
             // Get if we need to get all rows from the datasource
-            val fromScratch = clientScopeInfo.isNewScope || context.syncType == SyncType.Reinitialize || context.syncType == SyncType.ReinitializeWithUpload
+            val fromScratch =
+                clientScopeInfo.isNewScope || context.syncType == SyncType.Reinitialize || context.syncType == SyncType.ReinitializeWithUpload
 
             // IF is new and we have a snapshot directory, try to apply a snapshot
             if (fromScratch) {
                 // Get snapshot files
-                val serverSnapshotChanges = this.remoteOrchestrator.getSnapshot(this.schema, progress)
+                val serverSnapshotChanges =
+                    this.remoteOrchestrator.getSnapshot(this.schema, progress)
 
                 // Apply snapshot
                 if (serverSnapshotChanges.second != null) {
-                    val (snapshotChangesAppliedOnClient, clientSI) = this.localOrchestrator.applySnapshot(clientScopeInfo, serverSnapshotChanges.second, clientChanges.first, serverSnapshotChanges.first, serverSnapshotChanges.third, progress)
+                    val (snapshotChangesAppliedOnClient, clientSI) = this.localOrchestrator.applySnapshot(
+                        clientScopeInfo,
+                        serverSnapshotChanges.second,
+                        clientChanges.first,
+                        serverSnapshotChanges.first,
+                        serverSnapshotChanges.third,
+                        progress
+                    )
                     result.snapshotChangesAppliedOnClient = snapshotChangesAppliedOnClient
                     clientScopeInfo = clientSI
                 }
@@ -168,10 +195,15 @@ class SyncAgent(
 
             context.progressPercentage = 0.3
             // apply is 25%, get changes is 20%
-            val serverChanges = this.remoteOrchestrator.applyThenGetChanges(clientScopeInfo, clientChanges.second, progress)
+            val serverChanges = this.remoteOrchestrator.applyThenGetChanges(
+                clientScopeInfo,
+                clientChanges.second,
+                progress
+            )
 
             // Policy is always Server policy, so reverse this policy to get the client policy
-            val reverseConflictResolutionPolicy = if (serverChanges.value3 == ConflictResolutionPolicy.ServerWins) ConflictResolutionPolicy.ClientWins else ConflictResolutionPolicy.ServerWins
+            val reverseConflictResolutionPolicy =
+                if (serverChanges.value3 == ConflictResolutionPolicy.ServerWins) ConflictResolutionPolicy.ClientWins else ConflictResolutionPolicy.ServerWins
 
             // Get if we have already applied a snapshot, so far we don't need to reset table even if we are i Reinitialize Mode
             val snapshotApplied = result.snapshotChangesAppliedOnClient != null
@@ -179,9 +211,16 @@ class SyncAgent(
             // apply is 25%
             context.progressPercentage = 0.75
             val clientChangesApplied = this.localOrchestrator.applyChanges(
-                    clientScopeInfo, this.schema, serverChanges.value2,
-                    clientChanges.first, serverChanges.value1, reverseConflictResolutionPolicy, snapshotApplied,
-                    serverChanges.value5!!, progress)
+                clientScopeInfo,
+                this.schema,
+                serverChanges.value2,
+                clientChanges.first,
+                serverChanges.value1,
+                reverseConflictResolutionPolicy,
+                snapshotApplied,
+                serverChanges.value5!!,
+                progress
+            )
 
             completeTime = utcNow()
             this.localOrchestrator.completeTime = completeTime
@@ -216,6 +255,6 @@ class SyncAgent(
     }
 
     companion object {
-        private val TAG = SyncAgent::class.java.simpleName
+        private val TAG = SyncAgent::class.simpleName
     }
 }
