@@ -3,11 +3,11 @@ package com.mimetis.dotmim.sync.sqlite
 import com.mimetis.dotmim.sync.builders.DbMetadata
 import com.mimetis.dotmim.sync.set.SyncColumn
 import com.mimetis.dotmim.sync.setup.DbType
-import java.util.*
+import kotlin.reflect.KClass
 
 class SqliteDbMetadata : DbMetadata() {
     override fun isValid(columnDefinition: SyncColumn): Boolean {
-        var typeName = columnDefinition.originalTypeName.lowercase(Locale.getDefault())
+        var typeName = columnDefinition.originalTypeName.lowercase()
 
         if (typeName.contains("("))
             typeName = typeName.substring(0, typeName.indexOf("("))
@@ -43,7 +43,7 @@ class SqliteDbMetadata : DbMetadata() {
         if (tn.contains("("))
             tn = tn.substring(0, typeName.indexOf("("))
 
-        when (tn.lowercase(Locale.getDefault())) {
+        when (tn.lowercase()) {
             "bit",
             "integer",
             "bigint" ->
@@ -66,16 +66,16 @@ class SqliteDbMetadata : DbMetadata() {
         throw Exception("this type name $tn is not supported")
     }
 
-    override fun validateType(ownerType: Any): Class<*> {
+    override fun validateType(ownerType: Any): KClass<*> {
         return when (ownerType as SqliteType) {
             SqliteType.Integer ->
-                Long::class.java
+                Long::class
             SqliteType.Real ->
-                Double::class.java
+                Double::class
             SqliteType.Text ->
-                String::class.java
+                String::class
             SqliteType.Blob ->
-                Any::class.java
+                Any::class
             else ->
                 throw Exception("this DbType $ownerType is not supported")
         }
@@ -86,7 +86,7 @@ class SqliteDbMetadata : DbMetadata() {
         if (tn.contains("("))
             tn = tn.substring(0, typeName.indexOf("("))
 
-        when (tn.lowercase(Locale.getDefault())) {
+        when (tn.lowercase()) {
             "bit" ->
                 return DbType.Boolean
             "integer",
@@ -116,7 +116,7 @@ class SqliteDbMetadata : DbMetadata() {
             false
 
     override fun isNumericType(typeName: String): Boolean {
-        var tn = typeName.lowercase(Locale.getDefault())
+        var tn = typeName.lowercase()
 
         if (tn.contains("("))
             tn = typeName.substring(0, tn.indexOf("("))
@@ -126,12 +126,12 @@ class SqliteDbMetadata : DbMetadata() {
     }
 
     override fun isTextType(typeName: String): Boolean {
-        val tn = typeName.lowercase(Locale.getDefault())
+        val tn = typeName.lowercase()
         return tn == "text"
     }
 
     override fun supportScale(typeName: String): Boolean {
-        val tn = typeName.lowercase(Locale.getDefault())
+        val tn = typeName.lowercase()
         return tn == "numeric" || tn == "decimal" || tn == "real" || tn == "flot"
     }
 

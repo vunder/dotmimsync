@@ -1,9 +1,8 @@
 package com.mimetis.dotmim.sync.sqlite
 
-import android.database.Cursor
-import android.database.sqlite.SQLiteDatabase
-import android.os.Build
+import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.SQLiteStatement
+import androidx.sqlite.execSQL
 import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.builders.ParserName
 import com.mimetis.dotmim.sync.set.SyncColumn
@@ -11,25 +10,28 @@ import com.mimetis.dotmim.sync.set.SyncRow
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.DbType
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import java.text.SimpleDateFormat
-import java.util.Locale
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format.FormatStringsInDatetimeFormats
+import kotlinx.datetime.format.byUnicodePattern
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class, ExperimentalEncodingApi::class)
+@OptIn(ExperimentalUuidApi::class, ExperimentalEncodingApi::class,
+    FormatStringsInDatetimeFormats::class
+)
 class SqliteSyncAdapter(
     tableDescription: SyncTable,
     private val tableName: ParserName,
     private val trackingName: ParserName,
     setup: SyncSetup,
-    private val database: SQLiteDatabase
+    private val database: SQLiteConnection
 ) : DbSyncAdapter(tableDescription, setup) {
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    private val dateFormat = LocalDateTime.Format { byUnicodePattern("yyyy-MM-dd HH:mm:ss") }
     private var getSelectChangesSql = ""
 
-    override fun getSelectInitializedChanges(): Cursor {
+    override fun getSelectInitializedChanges(): SQLiteStatement {
         val stringBuilder = StringBuilder("SELECT ")
         for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
             val columnName = ParserName.parse(pkColumn).quoted().toString()
@@ -47,10 +49,10 @@ class SqliteSyncAdapter(
         }
         stringBuilder.appendLine("FROM ${tableName.quoted()} [base]")
 
-        return database.rawQuery(stringBuilder.toString(), null)
+        return database.prepare(stringBuilder.toString())
     }
 
-    override fun getSelectChanges(lastTimestamp: Long?): Cursor {
+    override fun getSelectChanges(lastTimestamp: Long?): SQLiteStatement {
         if (getSelectChangesSql.isEmpty()) {
             val stringBuilder = StringBuilder("SELECT ")
             for (pkColumn in this.tableDescription.getPrimaryKeysColumns()) {
@@ -83,12 +85,14 @@ class SqliteSyncAdapter(
             // Looking at discussion https://github.com/Mimetis/Dotmim.Sync/discussions/453, trying to remove ([side].[update_scope_id] <> @sync_scope_id)
             // since we are sure that sqlite will never be a server side database
 
-            stringBuilder.appendLine("WHERE ([side].[timestamp] > @sync_min_timestamp AND [side].[update_scope_id] IS NULL)")
+            stringBuilder.appendLine("WHERE ([side].[timestamp] > ? AND [side].[update_scope_id] IS NULL)")
 
             getSelectChangesSql = stringBuilder.toString()
         }
 
-        return database.rawQuery(getSelectChangesSql, arrayOf((lastTimestamp ?: 0).toString()))
+        return database.prepare(getSelectChangesSql).apply {
+            bindLong(1, lastTimestamp ?: 0)
+        }
     }
 
     private val getSelectRowQuery: SqliteQueryWrapper = SqliteQueryWrapper(
@@ -130,7 +134,7 @@ class SqliteSyncAdapter(
         return@SqliteQueryWrapper stringBuilder.toString()
     }
 
-    override fun getSelectRow(primaryKeyRow: SyncRow): Cursor {
+    override fun getSelectRow(primaryKeyRow: SyncRow): SQLiteStatement {
         val parameters = mutableMapOf<String, Any?>()
         fillParametersFromColumns(
             parameters,
@@ -399,35 +403,35 @@ class SqliteSyncAdapter(
             empty = "\n, "
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            // No support for "ON CONFLICT" in Android < 11 because this is supported in Sqlite after 3.24
-            stringBuilder.appendLine("INSERT OR REPLACE INTO ${tableName.quoted()}")
-            stringBuilder.appendLine("(${stringBuilderArguments})")
-            stringBuilder.appendLine("SELECT $stringBuilderParameters ")
-            stringBuilder.appendLine("FROM (SELECT ${stringBuilderParametersValues}) as [c]")
-            stringBuilder.appendLine("LEFT JOIN ${trackingName.quoted()} AS [side] ON $str1")
-            stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} AS [base] ON $str2")
-
-            stringBuilder.appendLine(
-                "WHERE (${
-                    SqliteManagementUtils.whereColumnAndParameters(
-                        this.tableDescription.primaryKeys,
-                        "[base]"
-                    )
-                } "
-            )
-            stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[update_scope_id] = @sync_scope_id)) ")
-            stringBuilder.appendLine(
-                "OR (${
-                    SqliteManagementUtils.whereColumnIsNull(
-                        this.tableDescription.primaryKeys,
-                        "[base]"
-                    )
-                } "
-            )
-            stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[timestamp] IS NULL)) ")
-            stringBuilder.appendLine("OR @sync_force_write = 1;")
-        } else {
+//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+//            // No support for "ON CONFLICT" in Android < 11 because this is supported in Sqlite after 3.24
+//            stringBuilder.appendLine("INSERT OR REPLACE INTO ${tableName.quoted()}")
+//            stringBuilder.appendLine("(${stringBuilderArguments})")
+//            stringBuilder.appendLine("SELECT $stringBuilderParameters ")
+//            stringBuilder.appendLine("FROM (SELECT ${stringBuilderParametersValues}) as [c]")
+//            stringBuilder.appendLine("LEFT JOIN ${trackingName.quoted()} AS [side] ON $str1")
+//            stringBuilder.appendLine("LEFT JOIN ${tableName.quoted()} AS [base] ON $str2")
+//
+//            stringBuilder.appendLine(
+//                "WHERE (${
+//                    SqliteManagementUtils.whereColumnAndParameters(
+//                        this.tableDescription.primaryKeys,
+//                        "[base]"
+//                    )
+//                } "
+//            )
+//            stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[update_scope_id] = @sync_scope_id)) ")
+//            stringBuilder.appendLine(
+//                "OR (${
+//                    SqliteManagementUtils.whereColumnIsNull(
+//                        this.tableDescription.primaryKeys,
+//                        "[base]"
+//                    )
+//                } "
+//            )
+//            stringBuilder.appendLine("AND ([side].[timestamp] < @sync_min_timestamp OR [side].[timestamp] IS NULL)) ")
+//            stringBuilder.appendLine("OR @sync_force_write = 1;")
+//        } else {
             // create update statement without PK
             var emptyUpdate = ""
             var columnsToUpdate = false
@@ -478,7 +482,7 @@ class SqliteSyncAdapter(
                 stringBuilder.append(stringBuilderUpdateSet).appendLine(";")
             } else
                 stringBuilder.appendLine(" ON CONFLICT (${primaryKeys}) DO NOTHING; ")
-        }
+//        }
 
         return@SqliteQueryWrapper stringBuilder.toString()
     }
@@ -593,8 +597,8 @@ class SqliteSyncAdapter(
     override fun deleteMetadata(timestamp: Long): Int {
         database.execSQL("DELETE FROM ${trackingName.quoted()} WHERE [timestamp] < $timestamp;")
 
-        return database.rawQuery("SELECT changes()", null).use { cursor ->
-            if (cursor.moveToNext())
+        return database.prepare("SELECT changes()").use { cursor ->
+            if (cursor.step())
                 cursor.getInt(0)
             else
                 0

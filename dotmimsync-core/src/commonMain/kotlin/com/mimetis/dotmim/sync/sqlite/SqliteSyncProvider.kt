@@ -1,16 +1,19 @@
 package com.mimetis.dotmim.sync.sqlite
 
-import android.database.sqlite.SQLiteOpenHelper
+import androidx.sqlite.SQLiteConnection
 import com.mimetis.dotmim.sync.CoreProvider
 import com.mimetis.dotmim.sync.DbSyncAdapter
-import com.mimetis.dotmim.sync.builders.*
+import com.mimetis.dotmim.sync.builders.DbBuilder
+import com.mimetis.dotmim.sync.builders.DbMetadata
+import com.mimetis.dotmim.sync.builders.DbScopeBuilder
+import com.mimetis.dotmim.sync.builders.DbTableBuilder
+import com.mimetis.dotmim.sync.builders.ParserName
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 
 class SqliteSyncProvider(
-    helper: SQLiteOpenHelper
+    private val database: SQLiteConnection
 ) : CoreProvider() {
-    private val database = helper.writableDatabase
     private lateinit var metadata: DbMetadata
     override val supportBulkOperations: Boolean
         get() = false

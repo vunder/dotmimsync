@@ -1,28 +1,33 @@
 package com.mimetis.dotmim.sync.sqlite
 
-import android.database.Cursor
-import android.database.Cursor.*
+import androidx.sqlite.SQLITE_DATA_BLOB
+import androidx.sqlite.SQLITE_DATA_FLOAT
+import androidx.sqlite.SQLITE_DATA_INTEGER
+import androidx.sqlite.SQLITE_DATA_NULL
+import androidx.sqlite.SQLITE_DATA_TEXT
+import androidx.sqlite.SQLiteStatement
+import kotlin.reflect.KClass
 
 object CursorHelper {
-    fun Cursor.getValue(columnIndex: Int): Any? =
+    fun SQLiteStatement.getValue(columnIndex: Int): Any? =
         if (this.isNull(columnIndex))
             null
     else
-            when (this.getType(columnIndex)) {
-                FIELD_TYPE_NULL -> null
-                FIELD_TYPE_INTEGER -> this.getInt(columnIndex)
-                FIELD_TYPE_FLOAT -> this.getDouble(columnIndex)
-                FIELD_TYPE_STRING -> this.getString(columnIndex)
-                FIELD_TYPE_BLOB -> this.getBlob(columnIndex)
+            when (this.getColumnType(columnIndex)) {
+                SQLITE_DATA_NULL -> null
+                SQLITE_DATA_INTEGER -> this.getInt(columnIndex)
+                SQLITE_DATA_FLOAT -> this.getDouble(columnIndex)
+                SQLITE_DATA_TEXT -> this.getText(columnIndex)
+                SQLITE_DATA_BLOB -> this.getBlob(columnIndex)
                 else -> null
             }
 
-    fun Int.getDataType(): Class<*> =
+    fun Int.getDataType(): KClass<*> =
             when (this) {
-                FIELD_TYPE_INTEGER -> Long::class.java
-                FIELD_TYPE_STRING -> String::class.java
-                FIELD_TYPE_FLOAT -> Double::class.java
-                FIELD_TYPE_BLOB -> ByteArray::class.java
-                else -> Any::class.java
+                SQLITE_DATA_INTEGER -> Long::class
+                SQLITE_DATA_TEXT -> String::class
+                SQLITE_DATA_FLOAT -> Double::class
+                SQLITE_DATA_BLOB -> ByteArray::class
+                else -> Any::class
             }
 }
