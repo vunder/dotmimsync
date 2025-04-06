@@ -355,8 +355,8 @@ class SqliteTableBuilder(
         }
 
     override fun existsTriggerCommand(triggerType: DbTriggerType): Boolean {
-        val commandTriggerName =
-            currentPlatform.formatString(getTriggerCommandName(triggerType), tableName.unquoted().toString())
+        val commandTriggerName = getTriggerCommandName(triggerType)
+//            currentPlatform.formatString(getTriggerCommandName(triggerType), tableName.unquoted().toString())
         val triggerName = ParserName.parse(commandTriggerName).toString()
 
         return database.prepare(
@@ -378,13 +378,14 @@ class SqliteTableBuilder(
     private lateinit var triggersNames: Map<DbTriggerType, String>
 
     private fun initTriggerNames() {
-        val tpref = if (this.setup.triggersPrefix.isNotBlank()) this.setup.triggersPrefix else ""
-        val tsuf = if (this.setup.triggersSuffix.isNotBlank()) this.setup.triggersSuffix else ""
+        val tpref = this.setup.triggersPrefix
+        val tsuf = this.setup.triggersSuffix
+        val tblName = tableName.unquoted().normalized()
 
         triggersNames = hashMapOf(
-            DbTriggerType.Insert to "[${tpref}${tableName.unquoted().normalized()}${tsuf}_insert_trigger]",
-            DbTriggerType.Update to "[${tpref}${tableName.unquoted().normalized()}${tsuf}_update_trigger]",
-            DbTriggerType.Delete to "[${tpref}${tableName.unquoted().normalized()}${tsuf}_delete_trigger]",
+            DbTriggerType.Insert to "[$tpref$tblName${tsuf}_insert_trigger]",
+            DbTriggerType.Update to "[$tpref$tblName${tsuf}_update_trigger]",
+            DbTriggerType.Delete to "[$tpref$tblName${tsuf}_delete_trigger]",
         )
     }
 
