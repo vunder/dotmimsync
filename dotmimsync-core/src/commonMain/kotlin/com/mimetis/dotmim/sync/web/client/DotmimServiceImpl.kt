@@ -13,7 +13,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.util.encodeBase64
-import java.security.MessageDigest
+import org.kotlincrypto.hash.sha2.SHA256
 import kotlin.uuid.ExperimentalUuidApi
 
 @OptIn(ExperimentalUuidApi::class)
@@ -143,7 +143,7 @@ internal class DotmimServiceImpl(
         }.body()
 
     init {
-        val md = MessageDigest.getInstance("SHA-256")
+        val md = SHA256()
         client.plugin(HttpSend).intercept { request ->
             request.headers.append("dotmim-sync-serialization-format", """{"f":"json", "s":0}""")
             if (request.body is OutgoingContent.ByteArrayContent) {

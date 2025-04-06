@@ -49,6 +49,7 @@ kotlin {
 
             implementation(libs.kotlin.bignum)
             implementation(libs.kotlin.bignum.serialization)
+            implementation(kotlincrypto.hash.sha2)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
