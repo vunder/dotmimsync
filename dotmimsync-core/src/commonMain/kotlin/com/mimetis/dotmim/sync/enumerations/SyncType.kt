@@ -1,11 +1,8 @@
 package com.mimetis.dotmim.sync.enumerations
 
 import kotlinx.serialization.Serializable
-import com.mimetis.dotmim.sync.data.EnumByNameSerializer
 
-class SyncTypeSerializer : EnumByNameSerializer<SyncType>()
-
-@Serializable(with = SyncTypeSerializer::class)
+@Serializable
 enum class SyncType {
     /// <summary>
     /// Normal synchronization
