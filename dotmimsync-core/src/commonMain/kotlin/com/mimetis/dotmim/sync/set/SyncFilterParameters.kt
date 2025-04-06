@@ -34,7 +34,7 @@ class SyncFilterParameters() : CustomList<SyncFilterParameter>() {
 
 @OptIn(ExperimentalSerializationApi::class)
 object SyncFilterParametersSerializer : ArrayListLikeSerializer<SyncFilterParameters, SyncFilterParameter>(SyncFilterParameter.serializer()) {
-    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncColumn>()
+    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncFilterParameter>()
 
     override fun deserialize(decoder: Decoder): SyncFilterParameters {
         val items = ArrayList<SyncFilterParameter>()

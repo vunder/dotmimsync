@@ -1,11 +1,12 @@
 package com.mimetis.dotmim.sync.set
 
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.mimetis.dotmim.sync.PrimitiveSerializer
 import com.mimetis.dotmim.sync.serialization.DmUtils
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.math.BigDecimal
-import java.util.Date
+import kotlin.reflect.KClass
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -38,18 +39,18 @@ class ContainerTable(
             var byteCount: Long = 0
 
             for (obj in itemArray) {
-                val objType = if (obj != null) obj::class.java else null
+                val objType = if (obj != null) obj::class else null
 
                 if (obj == null)
                     byteCount += 5
 //                else if (obj is DBNull)
 //                    byteCount += 5
-                else if (objType == String::class.java)
+                else if (objType == String::class)
                     byteCount += (obj as String).length
-                else if (objType == ByteArray::class.java)
+                else if (objType == ByteArray::class)
                     byteCount += (obj as ByteArray).size
                 else
-                    byteCount += getSizeForType(obj::class.java)
+                    byteCount += getSizeForType(obj::class)
 
                 // Size for the type
                 if (objType != null)
@@ -68,17 +69,17 @@ class ContainerTable(
         /**
          * Gets a size for a given type
          */
-        fun getSizeForType(type: Class<*>): Long =
+        fun getSizeForType(type: KClass<*>): Long =
                 when (type) {
-                    Long::class.java, ULong::class.java, Double::class.java, Date::class.java ->
+                    Long::class, ULong::class, Double::class, LocalDateTime::class ->
                         8
-                    Boolean::class.java, Byte::class.java ->
+                    Boolean::class, Byte::class ->
                         1
-                    Char::class.java, Short::class.java, UShort::class.java ->
+                    Char::class, Short::class, UShort::class ->
                         2
-                    Int::class.java, UInt::class.java, Float::class.java ->
+                    Int::class, UInt::class, Float::class ->
                         4
-                    BigDecimal::class.java, Uuid::class.java ->
+                    BigDecimal::class, Uuid::class ->
                         16
                     else ->
                         0

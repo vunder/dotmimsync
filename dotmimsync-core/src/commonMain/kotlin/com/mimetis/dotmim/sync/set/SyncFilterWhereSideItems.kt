@@ -36,7 +36,7 @@ object SyncFilterWhereSideItemsSerializer :
     ArrayListLikeSerializer<SyncFilterWhereSideItems, SyncFilterWhereSideItem>(
         SyncFilterWhereSideItem.serializer()
     ) {
-    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncColumn>()
+    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncFilterWhereSideItem>()
 
     override fun deserialize(decoder: Decoder): SyncFilterWhereSideItems {
         val items = ArrayList<SyncFilterWhereSideItem>()

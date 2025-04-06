@@ -34,7 +34,7 @@ class SyncFilterJoins() : CustomList<SyncFilterJoin>() {
 
 @OptIn(ExperimentalSerializationApi::class)
 object SyncFilterJoinsSerializer : ArrayListLikeSerializer<SyncFilterJoins, SyncFilterJoin>(SyncFilterJoin.serializer()) {
-    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncColumn>()
+    override val descriptor: SerialDescriptor = listSerialDescriptor<SyncFilterJoin>()
 
     override fun deserialize(decoder: Decoder): SyncFilterJoins {
         val items = ArrayList<SyncFilterJoin>()

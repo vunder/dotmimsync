@@ -50,7 +50,4 @@ abstract class SyncNamedItem<T> {
 
     override fun equals(other: Any?): Boolean =
             this.equalsByProperties(other as? T)
-
-    override fun hashCode(): Int =
-            javaClass.hashCode()
 }

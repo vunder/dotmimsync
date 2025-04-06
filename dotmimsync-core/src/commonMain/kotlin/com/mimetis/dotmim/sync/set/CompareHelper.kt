@@ -10,7 +10,33 @@ fun <E> List<E>?.compareWith(other: List<E>?): Boolean {
         return true
 
     if (this!!.size != other!!.size)
-        return false;
+        return false
+
+    // Check all items are identical
+    return this.all { sourceItem ->
+        other.any { otherItem ->
+            val cSourceItem = sourceItem as? SyncNamedItem<E>
+            val cOtherItem = sourceItem as? SyncNamedItem<E>
+
+            if (cSourceItem != null && cOtherItem != null)
+                return cSourceItem.equalsByProperties(otherItem)
+            else
+                sourceItem == otherItem
+        }
+    }
+}
+
+fun <E> CustomList<E>?.compareWith(other: CustomList<E>?): Boolean {
+    // checking null ref
+    if ((this == null && other != null) || (this != null && other == null))
+        return false
+
+    // If both are null, return true
+    if (this == null && other == null)
+        return true
+
+    if (this!!.size != other!!.size)
+        return false
 
     // Check all items are identical
     return this.all { sourceItem ->
