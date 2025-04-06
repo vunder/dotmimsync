@@ -4,13 +4,17 @@ import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.io.IOException
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -54,7 +58,7 @@ class BatchInfo() {
     /**
      * List of batch parts if not in memory
      */
-   @SerialName("parts")
+    @SerialName("parts")
     var batchPartsInfo: ArrayList<BatchPartInfo>? = null
 
     /**
@@ -78,19 +82,36 @@ class BatchInfo() {
     /**
      * Create a new BatchInfo, containing all BatchPartInfo
      */
-    constructor(inMemory: Boolean, inSchema: SyncSet, rootDirectory: String = "", directoryName: String = "") : this() {
+    constructor(
+        inMemory: Boolean,
+        inSchema: SyncSet,
+        rootDirectory: String = "",
+        directoryName: String = ""
+    ) : this() {
         this.inMemory = inMemory
 
         // We need to create a change table set, containing table with columns not readonly
         for (table in inSchema.tables)
-            DbSyncAdapter.createChangesTable(inSchema.tables[table.tableName, table.schemaName]!!, this.sanitizedSchema)
+            DbSyncAdapter.createChangesTable(
+                inSchema.tables[table.tableName, table.schemaName]!!,
+                this.sanitizedSchema
+            )
 
         // If not in memory, generate a directory name and initialize batch parts list
         if (!this.inMemory) {
             this.directoryRoot = rootDirectory
             this.batchPartsInfo = ArrayList()
             this.directoryName = if (directoryName.isNotBlank())
-                SimpleDateFormat("yyyy_MM_dd_ss", Locale.getDefault()).format(Calendar.getInstance(Locale.getDefault()).time)
+                LocalDateTime.Format {
+                    year()
+                    char('_')
+                    monthNumber()
+                    char('_')
+                    dayOfMonth()
+                    char('_')
+                    second()
+                    char('_')
+                }.format(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
             else
                 directoryName
         }
@@ -99,7 +120,12 @@ class BatchInfo() {
     /**
      * Add changes to batch info.
      */
-    fun addChanges(changes: SyncSet, batchIndex: Int = 0, isLastBatch: Boolean = true, orchestrator: BaseOrchestrator? = null) {
+    fun addChanges(
+        changes: SyncSet,
+        batchIndex: Int = 0,
+        isLastBatch: Boolean = true,
+        orchestrator: BaseOrchestrator? = null
+    ) {
         if (this.inMemory) {
             this.serializerFactoryKey = null
             this.inMemoryData = changes
@@ -107,7 +133,14 @@ class BatchInfo() {
 //            this.serializerFactoryKey = serializerFactoryKey.key
             val bpId = generateNewFileName(batchIndex.toString())
             //var fileName = Path.Combine(this.GetDirectoryFullPath(), bpId)
-            val bpi = BatchPartInfo.createBatchPartInfo(batchIndex, changes, bpId, getDirectoryFullPath(), isLastBatch, orchestrator)
+            val bpi = BatchPartInfo.createBatchPartInfo(
+                batchIndex,
+                changes,
+                bpId,
+                getDirectoryFullPath(),
+                isLastBatch,
+                orchestrator
+            )
 
             // add the batchpartinfo tp the current batchinfo
             this.batchPartsInfo?.add(bpi)
@@ -118,7 +151,10 @@ class BatchInfo() {
      * Get the full path of the Batch directory
      */
     fun getDirectoryFullPath(): String =
-            if (inMemory) "" else File(directoryRoot, directoryName).absolutePath
+        if (inMemory)
+            ""
+        else
+            Path(directoryRoot, directoryName).toString()
 
     /**
      * Ensure the last batch part (if not in memory) has the correct IsLastBatch flag
@@ -214,13 +250,33 @@ class BatchInfo() {
     fun tryRemoveDirectory() {
         // Once we have applied all the batch, we can safely remove the temp dir and all it's files
         if (!this.inMemory && this.directoryRoot.isNotBlank() && this.directoryName.isBlank()) {
-            val tmpDirectory = File(this.getDirectoryFullPath())
+            val tmpDirectory = Path(this.getDirectoryFullPath())
 
-            if (!tmpDirectory.exists())
+            if (!SystemFileSystem.exists(tmpDirectory))
                 return
 
             try {
-                tmpDirectory.deleteRecursively()
+                val stack = ArrayList<Path>()
+                stack.add(tmpDirectory)
+                while (stack.isNotEmpty()) {
+                    val path = stack.first()
+                    val children = try {
+                        SystemFileSystem.list(path)
+                    } catch (_: IOException) {
+                        // Not a directory
+                        SystemFileSystem.delete(path)
+                        stack.remove(path)
+                        continue
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                    if (children.isEmpty()) {
+                        SystemFileSystem.delete(path)
+                        stack.remove(path)
+                    } else {
+                        stack.addAll(children)
+                    }
+                }
             }
             // do nothing here
             catch (e: Exception) {
@@ -228,7 +284,11 @@ class BatchInfo() {
         }
     }
 
-    fun getTable(tableName: String, schemaName: String, orchestrator: BaseOrchestrator? = null): List<SyncTable?> {
+    fun getTable(
+        tableName: String,
+        schemaName: String,
+        orchestrator: BaseOrchestrator? = null
+    ): List<SyncTable?> {
         if (this.sanitizedSchema == null)
             throw NullPointerException("Batch info schema should not be null")
 
@@ -240,18 +300,35 @@ class BatchInfo() {
                 return listOf(this.inMemoryData!!.tables[tableName, schemaName]!!)
         } else {
             val bpiTables = batchPartsInfo
-                    ?.filter { bpi -> bpi.rowsCount > 0 && bpi.tables!!.any { t -> t.equalsByName(tableInfo) } }
-                    ?.sortedBy { t -> t.index }
+                ?.filter { bpi ->
+                    bpi.rowsCount > 0 && bpi.tables!!.any { t ->
+                        t.equalsByName(
+                            tableInfo
+                        )
+                    }
+                }
+                ?.sortedBy { t -> t.index }
 
             if (bpiTables != null) {
                 return bpiTables.mapNotNull { batchPartinInfo ->
                     // load only if not already loaded in memory
                     if (batchPartinInfo.data == null)
-                        batchPartinInfo.loadBatch(this.sanitizedSchema, getDirectoryFullPath(), orchestrator)
+                        batchPartinInfo.loadBatch(
+                            this.sanitizedSchema,
+                            getDirectoryFullPath(),
+                            orchestrator
+                        )
 
                     // Get the table from the batchPartInfo
                     // generate a tmp SyncTable for
-                    val batchTable = batchPartinInfo.data?.tables?.firstOrNull { bt -> bt.equalsByName(SyncTable(tableName, schemaName)) }
+                    val batchTable = batchPartinInfo.data?.tables?.firstOrNull { bt ->
+                        bt.equalsByName(
+                            SyncTable(
+                                tableName,
+                                schemaName
+                            )
+                        )
+                    }
 
                     if (batchTable != null) {
 

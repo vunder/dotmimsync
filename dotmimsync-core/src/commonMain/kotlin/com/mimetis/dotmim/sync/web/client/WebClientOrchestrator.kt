@@ -31,11 +31,14 @@ import com.mimetis.dotmim.sync.setup.SyncSetup
 import com.mimetis.dotmim.sync.utcNow
 import io.ktor.client.HttpClient
 import io.ktor.http.Url
-import java.io.File
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -47,7 +50,7 @@ class WebClientOrchestrator(
     private val converter: Converter? = null,
     private val maxDownladingDegreeOfParallelism: Int = 4
 ) : RemoteOrchestrator(FancyCoreProvider(), SyncOptions(), SyncSetup()) {
-//    private val TAG = this::class.java.simpleName
+    //    private val TAG = this::class.java.simpleName
     private val service = DotmimServiceImpl(serviceAddress, client)
 
     /**
@@ -146,10 +149,20 @@ class WebClientOrchestrator(
 
         // Generate a batch directory
         val batchDirectoryRoot = this.options.batchDirectory
-        val batchDirectoryName = SimpleDateFormat("yyyy_MM_dd_ss", Locale.getDefault()).format(
-            Calendar.getInstance(Locale.getDefault()).time
-        ) + Uuid.random().toString().replace(".", "")
-        val batchDirectoryFullPath = File(batchDirectoryRoot, batchDirectoryName).absolutePath
+        val batchDirectoryName =
+            LocalDateTime.Format {
+                year()
+                char('_')
+                monthNumber()
+                char('_')
+                dayOfMonth()
+                char('_')
+                second()
+                char('_')
+            }.format(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())) +
+                    Uuid.random().toString().replace(".", "")
+
+        val batchDirectoryFullPath = Path(batchDirectoryRoot, batchDirectoryName)
 
         // Create the BatchInfo serialized (forced because in a snapshot call, so we are obviously serialized on disk)
         val serverBatchInfo = BatchInfo(false, schema!!, batchDirectoryRoot, batchDirectoryName)
@@ -185,7 +198,12 @@ class WebClientOrchestrator(
 //            val binaryData3 = await serializer3.SerializeAsync(changesToSend3)
 //            val step3 = HttpStep.GetMoreChanges
 
-            val args2 = HttpGettingServerChangesRequestArgs(bpi.index, serverBatchInfo.batchPartsInfo!!.size, summaryResponseContent.syncContext, this.getServiceHost())
+            val args2 = HttpGettingServerChangesRequestArgs(
+                bpi.index,
+                serverBatchInfo.batchPartsInfo!!.size,
+                summaryResponseContent.syncContext,
+                this.getServiceHost()
+            )
             this.intercept(args2)
 
             val response = service.moreChanges(authHeader, changesToSend3, converter)
@@ -423,9 +441,18 @@ class WebClientOrchestrator(
 
         // Generate the batch directory
         val batchDirectoryRoot = this.options.batchDirectory
-        val batchDirectoryName = SimpleDateFormat("yyyy_MM_dd_ss", Locale.getDefault()).format(
-            Calendar.getInstance(Locale.getDefault()).time
-        ) + Uuid.random().toString().replace(".", "")
+        val batchDirectoryName =
+            LocalDateTime.Format {
+                year()
+                char('_')
+                monthNumber()
+                char('_')
+                dayOfMonth()
+                char('_')
+                second()
+                char('_')
+            }.format(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())) +
+                    Uuid.random().toString().replace(".", "")
 
         serverBatchInfo.directoryRoot = batchDirectoryRoot
         serverBatchInfo.directoryName = batchDirectoryName
@@ -462,7 +489,7 @@ class WebClientOrchestrator(
             val response = service.moreChanges(authHeader, changesToSend3, converter)
 
             // Serialize
-            serialize(response, bpi.fileName, serverBatchInfo.getDirectoryFullPath(), this)
+            serialize(response, bpi.fileName, Path(serverBatchInfo.getDirectoryFullPath()), this)
 
             bpi.serializedType = BatchPartInfo::class
 
@@ -541,14 +568,12 @@ class WebClientOrchestrator(
     private fun serialize(
         data: ByteArray,
         fileName: String,
-        directoryFullPath: String,
+        directoryFullPath: Path,
         orchestrator: BaseOrchestrator
     ) {
-        val dir = File(directoryFullPath)
-        if (dir.isDirectory && !dir.exists())
-            dir.mkdir()
-
-        val file = File(directoryFullPath, fileName)
-        file.writeBytes(data)
+        SystemFileSystem.createDirectories(directoryFullPath)
+        SystemFileSystem.sink(Path(directoryFullPath, fileName)).use {
+            it.buffered().write(data)
+        }
     }
 }
