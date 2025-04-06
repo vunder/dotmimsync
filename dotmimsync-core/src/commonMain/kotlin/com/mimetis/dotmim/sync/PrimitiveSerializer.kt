@@ -1,8 +1,8 @@
 package com.mimetis.dotmim.sync
 
-import android.util.Base64
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.format
+import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -25,10 +25,16 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
+@OptIn(
+    ExperimentalUuidApi::class,
+    FormatStringsInDatetimeFormats::class,
+    ExperimentalEncodingApi::class
+)
 @ExperimentalSerializationApi
 object PrimitiveSerializer : KSerializer<Any> {
     private val dateFormat = LocalDateTime.Format { byUnicodePattern("yyyy-MM-dd'T'HH:mm:ss") }
@@ -46,7 +52,7 @@ object PrimitiveSerializer : KSerializer<Any> {
             is Long -> encoder.encodeLong(value)
             is Double -> encoder.encodeDouble(value)
             is Float -> encoder.encodeFloat(value)
-            is ByteArray -> encoder.encodeString(Base64.encodeToString(value, Base64.NO_WRAP))
+            is ByteArray -> encoder.encodeString(Base64.encode(value))
             is Uuid -> encoder.encodeString(value.toString().uppercase())
             is LocalDateTime -> encoder.encodeString(value.format(dateFormat))
             else -> encoder.encodeString(value.toString())
