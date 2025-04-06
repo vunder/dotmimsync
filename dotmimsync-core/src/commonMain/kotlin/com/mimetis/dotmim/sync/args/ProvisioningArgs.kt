@@ -12,7 +12,7 @@ class ProvisioningArgs(
     /**
      * Get the provision type (Flag enum)
      */
-    val provision: EnumSet<SyncProvision>,
+    val provision: Set<SyncProvision>,
 
     /**
      * Gets the schema to be applied in the database

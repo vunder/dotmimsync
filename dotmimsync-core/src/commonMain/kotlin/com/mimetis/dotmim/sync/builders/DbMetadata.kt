@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync.builders
 
 import com.mimetis.dotmim.sync.set.SyncColumn
 import com.mimetis.dotmim.sync.setup.DbType
+import kotlin.reflect.KClass
 
 abstract class DbMetadata {
     /**
@@ -22,7 +23,7 @@ abstract class DbMetadata {
     /**
      * Get a managed type from a datastore dbType
      */
-    abstract fun validateType(ownerType: Any): Class<*>
+    abstract fun validateType(ownerType: Any): KClass<*>
 
     /**
      * Get a DbType from a datastore type name

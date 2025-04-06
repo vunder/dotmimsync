@@ -1,7 +1,8 @@
 package com.mimetis.dotmim.sync
 
-import java.math.BigDecimal
-import java.util.Date
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import kotlinx.datetime.LocalDateTime
+import kotlin.reflect.KClass
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -17,45 +18,45 @@ object SyncTypeConverter {
         return value as? T
     }
 
-    fun tryConvertTo(value: Any?, typeOfT: Class<*>): Any? =
+    fun tryConvertTo(value: Any?, typeOfT: KClass<*>): Any? =
             when {
-                typeOfT == Short::class.java ->
+                typeOfT == Short::class ->
                     tryConvertTo<Short>(value)
-                typeOfT == Int::class.java ->
+                typeOfT == Int::class ->
                     tryConvertTo<Int>(value)
-                typeOfT == Long::class.java ->
+                typeOfT == Long::class ->
                     tryConvertTo<Long>(value)
-                typeOfT == UShort::class.java ->
+                typeOfT == UShort::class ->
                     tryConvertTo<UShort>(value)
-                typeOfT == UInt::class.java ->
+                typeOfT == UInt::class ->
                     tryConvertTo<UInt>(value)
-                typeOfT == ULong::class.java ->
+                typeOfT == ULong::class ->
                     tryConvertTo<ULong>(value)
-                typeOfT == Date::class.java ->
-                    tryConvertTo<Date>(value)
+                typeOfT == LocalDateTime::class ->
+                    tryConvertTo<LocalDateTime>(value)
 //            typeOfT == DateTimOffset::class.java->
 //                tryConvertTo<DateTimOffset>(value)
-                typeOfT == String::class.java ->
+                typeOfT == String::class ->
                     tryConvertTo<String>(value)
-                typeOfT == Byte::class.java ->
+                typeOfT == Byte::class ->
                     tryConvertTo<Byte>(value)
-                typeOfT == Boolean::class.java ->
+                typeOfT == Boolean::class ->
                     tryConvertTo<Boolean>(value)
-                typeOfT == Uuid::class.java ->
+                typeOfT == Uuid::class ->
                     tryConvertTo<Uuid>(value)
-                typeOfT == Char::class.java ->
+                typeOfT == Char::class ->
                     tryConvertTo<Char>(value)
-                typeOfT == BigDecimal::class.java ->
+                typeOfT == BigDecimal::class ->
                     tryConvertTo<BigDecimal>(value)
-                typeOfT == Double::class.java ->
+                typeOfT == Double::class ->
                     tryConvertTo<Double>(value)
-                typeOfT == Float::class.java ->
+                typeOfT == Float::class ->
                     tryConvertTo<Float>(value)
 //            typeOfT == SByte::class.java->
 //                tryConvertTo<SByte>(value)
 //            typeOfT == TimeSpan::class.java->
 //                tryConvertTo<TimeSpan>(value)
-                typeOfT == ByteArray::class.java ->
+                typeOfT == ByteArray::class ->
                     tryConvertTo<ByteArray>(value)
 //            typeConverter.CanConvertFrom(typeOfT) ->
 //                Convert.ChangeType(typeConverter.ConvertFrom(value), typeOfT, provider);

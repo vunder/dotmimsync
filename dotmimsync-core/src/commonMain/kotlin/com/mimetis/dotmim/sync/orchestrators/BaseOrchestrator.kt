@@ -175,7 +175,7 @@ abstract class BaseOrchestrator(
         overwrite: Boolean,
         schema: SyncSet,
         setup: SyncSetup,
-        provision: Set<SyncProvision>,
+        provision: MutableSet<SyncProvision>,
         scope: Any?,
         progress: Progress<ProgressArgs>?
     ): SyncSet {

@@ -4,7 +4,6 @@ import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.enumerations.SyncProvision
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncSet
-import java.util.*
 
 class DeprovisioningArgs(
     context: SyncContext,
@@ -12,7 +11,7 @@ class DeprovisioningArgs(
     /**
      * Get the provision type (Flag enum)
      */
-    val provision: EnumSet<SyncProvision>,
+    val provision: Set<SyncProvision>,
 
     /**
      * Gets the schema to be applied in the database

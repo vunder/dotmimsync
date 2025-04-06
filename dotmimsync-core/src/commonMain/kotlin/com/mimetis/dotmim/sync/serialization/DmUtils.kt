@@ -1,55 +1,56 @@
 package com.mimetis.dotmim.sync.serialization
 
-import java.math.BigDecimal
-import java.util.Date
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import kotlinx.datetime.LocalDateTime
+import kotlin.reflect.KClass
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 object DmUtils {
-    fun getAssemblyQualifiedName(valueType: Class<*>): String =
+    fun getAssemblyQualifiedName(valueType: KClass<*>): String =
             when (valueType) {
-                Boolean::class.java ->
+                Boolean::class ->
                     "1"
-                Byte::class.java ->
+                Byte::class ->
                     "2"
-                Char::class.java ->
+                Char::class ->
                     "3"
-                Double::class.java ->
+                Double::class ->
                     "4"
-                Float::class.java ->
+                Float::class ->
                     "5"
-                Int::class.java ->
+                Int::class ->
                     "6"
-                Long::class.java ->
+                Long::class ->
                     "7"
-                Short::class.java ->
+                Short::class ->
                     "8"
-                UInt::class.java ->
+                UInt::class ->
                     "9"
-                ULong::class.java ->
+                ULong::class ->
                     "10"
-                UShort::class.java ->
+                UShort::class ->
                     "11"
-                ByteArray::class.java ->
+                ByteArray::class ->
                     "12"
-                Date::class.java ->
+                LocalDateTime::class ->
                     "13"
 //                 DateTimeOffset::class.java ->
 //                    "14"
-                BigDecimal::class.java ->
+                BigDecimal::class ->
                     "15"
-                Uuid::class.java ->
+                Uuid::class ->
                     "16"
-                String::class.java ->
+                String::class ->
                     "17"
 //                    SByte::class.java ->
 //                        "18"
 //                    TimeSpan::class.java ->
 //                        "19"
-                CharArray::class.java ->
+                CharArray::class ->
                     "20"
                 else ->
-                    valueType.name
+                    valueType.simpleName ?: valueType.toString()
             }
 }

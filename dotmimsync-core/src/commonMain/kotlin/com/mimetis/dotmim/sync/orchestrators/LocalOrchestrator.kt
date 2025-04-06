@@ -408,7 +408,7 @@ class LocalOrchestrator(
      */
     fun provision(
         schema: SyncSet,
-        provision: Set<SyncProvision>,
+        provision: MutableSet<SyncProvision>,
         overwrite: Boolean = false,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>?
@@ -450,7 +450,7 @@ class LocalOrchestrator(
      * Deprovision the orchestrator database based on the provision enumeration
      */
     open fun deprovision(
-        provision: Set<SyncProvision>,
+        provision: MutableSet<SyncProvision>,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>? = null
     ): Boolean {
@@ -476,7 +476,7 @@ class LocalOrchestrator(
      */
     fun deprovision(
         schema: SyncSet,
-        provision: Set<SyncProvision>,
+        provision: MutableSet<SyncProvision>,
         clientScopeInfo: ScopeInfo? = null,
         progress: Progress<ProgressArgs>? = null
     ): Boolean {
