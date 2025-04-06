@@ -1,13 +1,13 @@
 package com.mimetis.dotmim.sync.interceptors
 
 import com.mimetis.dotmim.sync.args.ProgressArgs
-import java.util.concurrent.ConcurrentHashMap
+import io.ktor.util.collections.ConcurrentMap
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 class Interceptors {
     @PublishedApi
-    internal val dictionary = ConcurrentHashMap<KType, Lazy<ISyncInterceptor>>()
+    internal val dictionary = ConcurrentMap<KType, Lazy<ISyncInterceptor>>()
 
     @Suppress("EXPERIMENTAL_API_USAGE_ERROR", "UNCHECKED_CAST")
     inline fun <reified T : ProgressArgs> getInterceptor(): InterceptorWrapper<T> {

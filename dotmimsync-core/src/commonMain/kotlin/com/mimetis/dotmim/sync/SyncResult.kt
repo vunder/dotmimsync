@@ -140,7 +140,7 @@ class SyncResult(
             val m = moH / 60 / 1000
             val moM = moH % (60 * 1000)
             val s = moM / 1000
-            val sb = StringBuffer()
+            val sb = StringBuilder()
             if (h < 10) {
                 sb.append(0)
             }

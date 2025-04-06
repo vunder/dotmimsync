@@ -30,6 +30,7 @@ import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import com.mimetis.dotmim.sync.utcNow
 import io.ktor.client.HttpClient
+import io.ktor.http.Url
 import java.io.File
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -192,7 +193,7 @@ class WebClientOrchestrator(
             // Serialize
             serialize(response, bpi.fileName, batchDirectoryFullPath, this)
 
-            bpi.serializedType = BatchPartInfo::class.java
+            bpi.serializedType = BatchPartInfo::class
 
             // Raise response from server containing a batch changes
             val args3 = HttpGettingServerChangesResponseArgs(
@@ -463,7 +464,7 @@ class WebClientOrchestrator(
             // Serialize
             serialize(response, bpi.fileName, serverBatchInfo.getDirectoryFullPath(), this)
 
-            bpi.serializedType = BatchPartInfo::class.java
+            bpi.serializedType = BatchPartInfo::class
 
             // Raise response from server containing a batch changes
             val args3 = HttpGettingServerChangesResponseArgs(
@@ -527,7 +528,7 @@ class WebClientOrchestrator(
             .forEach { table -> table.rows.forEach { row -> this.converter?.afterDeserialized(row) } }
 
     private fun getServiceHost() =
-        URL(serviceAddress).host
+        Url(serviceAddress).host
 
     private fun beforeSerializeRows(data: SyncSet) {
         data.tables

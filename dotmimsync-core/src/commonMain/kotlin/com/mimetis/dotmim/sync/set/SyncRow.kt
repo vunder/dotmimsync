@@ -1,10 +1,9 @@
 package com.mimetis.dotmim.sync.set
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import com.mimetis.dotmim.sync.DataRowState
 import com.mimetis.dotmim.sync.PrimitiveSerializer
-import java.util.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 class SyncRow(@Transient val length: Int = 0) {
@@ -54,7 +53,7 @@ class SyncRow(@Transient val length: Int = 0) {
 
     fun toArray(): Array<Any?> {
         val array = Array<Any?>(this.length + 1) {}
-        System.arraycopy(this.buffer, 0, array, 1, this.length)
+        buffer.copyInto(array, 1, 0)
         array[0] = this.rowState.value
         return array
     }
@@ -68,7 +67,7 @@ class SyncRow(@Transient val length: Int = 0) {
         if (row.size != length + 1)
             throw Exception("row must contains State on position 0 and UpdateScopeId on position 1")
 
-        System.arraycopy(row, 1, buffer, 0, length)
+        row.copyInto(buffer, 0, 1)
         val drs = row[0]
         this.rowState = if (drs is DataRowState) {
             drs
@@ -78,7 +77,7 @@ class SyncRow(@Transient val length: Int = 0) {
     }
 
     fun clear() {
-        Arrays.fill(buffer, null)
+        buffer.fill(null)
         //this.table = null
     }
 }

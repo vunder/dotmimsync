@@ -1,9 +1,9 @@
 package com.mimetis.dotmim.sync.builders
 
-import java.util.concurrent.ConcurrentHashMap
+import io.ktor.util.collections.ConcurrentMap
 
 object GlobalParser {
-    private val parsers = ConcurrentHashMap<String, Lazy<ParserString>>()
+    private val parsers = ConcurrentMap<String, Lazy<ParserString>>()
 
     fun getParserString(key: String): ParserString {
         // Try to get the instance
