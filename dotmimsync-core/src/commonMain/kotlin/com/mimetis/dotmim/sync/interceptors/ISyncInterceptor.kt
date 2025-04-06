@@ -1,8 +1,6 @@
 package com.mimetis.dotmim.sync.interceptors
 
-import java.io.Closeable
-
-interface ISyncInterceptor : Closeable {
+interface ISyncInterceptor : AutoCloseable {
 }
 
 interface ISyncInterceptor1<T> : ISyncInterceptor {
