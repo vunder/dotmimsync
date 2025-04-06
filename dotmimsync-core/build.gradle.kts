@@ -87,11 +87,16 @@ android {
     }
 }
 
+val versionSuffix: String by project
+
 publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
         version = "1.1.0-kmp.alpha0"
+        if (versionSuffix.isNotBlank()) {
+            version += "-$versionSuffix"
+        }
 
         pom {
             name = "dotmimsync"
