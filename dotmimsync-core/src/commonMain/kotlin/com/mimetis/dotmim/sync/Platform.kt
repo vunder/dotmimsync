@@ -2,7 +2,6 @@ package com.mimetis.dotmimsync
 
 interface Platform {
     val name: String
-    fun formatString(format: String, vararg args: String?): String
 }
 
 expect fun getPlatform(): Platform
