@@ -18,7 +18,7 @@ open class ProgressArgs(
      * Gets the args type
      */
     val typeName: String
-        get() = this::class.java.name
+        get() = this::class.simpleName ?: this::class.toString()
 
     /**
      * return a global message about current progress

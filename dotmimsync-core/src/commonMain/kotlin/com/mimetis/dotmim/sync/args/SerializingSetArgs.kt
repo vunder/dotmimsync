@@ -3,7 +3,7 @@ package com.mimetis.dotmim.sync.args
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.ContainerSet
-import java.io.File
+import kotlinx.io.files.Path
 
 /**
  * Raise before serialize a change set to get a byte array
@@ -38,7 +38,7 @@ class SerializingSetArgs(
         8000
 
     override val source: String =
-        if (directoryPath.isBlank()) "" else File(directoryPath).name
+        if (directoryPath.isBlank()) "" else Path(directoryPath).name
 }
 
 /**

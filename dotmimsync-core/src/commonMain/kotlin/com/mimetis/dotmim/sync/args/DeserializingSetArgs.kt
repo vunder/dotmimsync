@@ -3,8 +3,8 @@ package com.mimetis.dotmim.sync.args
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.ContainerSet
-import java.io.File
-import java.io.FileOutputStream
+import kotlinx.io.Sink
+import kotlinx.io.files.Path
 
 /**
  * Raise just after loading a binary change set from disk, just before calling the deserializer
@@ -15,7 +15,7 @@ class DeserializingSetArgs(
     /**
      * Gets the Filestream to deserialize
      */
-    val fileStream: FileOutputStream,
+    val fileStream: Sink,
 
     /**
      * File name containing the set to be deserialized
@@ -34,7 +34,7 @@ class DeserializingSetArgs(
         8050
 
     override val source: String =
-        if (directoryPath.isBlank()) "" else File(directoryPath).name
+        if (directoryPath.isBlank()) "" else Path(directoryPath).name
 
     /**
      * Gets or Sets the container set result, after having deserialized the FileStream. If the Result property is Null, Dotmim.Sync will deserialized the stream using a simple Json converter
