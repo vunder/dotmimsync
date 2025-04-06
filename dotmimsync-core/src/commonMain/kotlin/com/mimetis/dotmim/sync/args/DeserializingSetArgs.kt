@@ -3,7 +3,7 @@ package com.mimetis.dotmim.sync.args
 import com.mimetis.dotmim.sync.SyncContext
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.ContainerSet
-import kotlinx.io.Sink
+import kotlinx.io.RawSink
 import kotlinx.io.files.Path
 
 /**
@@ -15,7 +15,7 @@ class DeserializingSetArgs(
     /**
      * Gets the Filestream to deserialize
      */
-    val fileStream: Sink,
+    val fileStream: RawSink,
 
     /**
      * File name containing the set to be deserialized
@@ -26,7 +26,7 @@ class DeserializingSetArgs(
      * Directory containing the file, about to be deserialized
      */
     val directoryPath: String
-) : ProgressArgs(context) {
+) : ProgressArgs(context), AutoCloseable {
     override val message: String =
         "[$fileName] Deserializing Set."
 
@@ -40,6 +40,10 @@ class DeserializingSetArgs(
      * Gets or Sets the container set result, after having deserialized the FileStream. If the Result property is Null, Dotmim.Sync will deserialized the stream using a simple Json converter
      */
     var result: ContainerSet? = null
+
+    override fun close() {
+        fileStream.close()
+    }
 }
 
 /**

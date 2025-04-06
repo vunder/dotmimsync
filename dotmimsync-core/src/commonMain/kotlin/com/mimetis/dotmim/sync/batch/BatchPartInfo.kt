@@ -1,14 +1,22 @@
 package com.mimetis.dotmim.sync.batch
 
-import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
 import com.mimetis.dotmim.sync.MissingFileException
 import com.mimetis.dotmim.sync.args.DeserializingSetArgs
 import com.mimetis.dotmim.sync.args.SerializingSetArgs
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.ContainerSet
 import com.mimetis.dotmim.sync.set.SyncSet
-import java.io.File
+import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.readText
+import kotlinx.io.buffered
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.write
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 
 /**
@@ -92,11 +100,11 @@ class BatchPartInfo {
         if (fileName.isBlank())
             throw Exception("ArgumentNullException: fileName")
 
-        val file = File(directoryFullPath, fileName)
+        val file = Path(directoryFullPath, fileName)
         //val fullPath = Path.Combine(directoryFullPath, fileName)
 
-        if (!file.exists())
-            throw MissingFileException(file.absolutePath)
+        if (!SystemFileSystem.exists(file))
+            throw MissingFileException(file.toString())
 
         //var jsonConverter = new Utf8JsonConverter<ContainerSet>()
 
@@ -109,7 +117,7 @@ class BatchPartInfo {
         if (orchestrator != null) {
             val interceptorArgs = DeserializingSetArgs(
                 orchestrator.getContext(),
-                file.outputStream(),
+                SystemFileSystem.sink(file),
                 fileName,
                 directoryFullPath
             )
@@ -122,10 +130,11 @@ class BatchPartInfo {
                 ignoreUnknownKeys = true
                 isLenient = true
             }
+            val jsonText = SystemFileSystem.source(file).use { it.buffered().readText() }
             set = if (serializedType == ContainerSet::class) {
-                json.decodeFromString(file.readText())
+                json.decodeFromString(jsonText)
             } else {
-                val jsonString: ContainerSetBoilerPlate = json.decodeFromString(file.readText())
+                val jsonString: ContainerSetBoilerPlate = json.decodeFromString(jsonText)
                 jsonString.changes
             }
         }
@@ -146,12 +155,12 @@ class BatchPartInfo {
             if (set == null)
                 return
 
-            val dir = File(directoryFullPath)
+            val dir = Path(directoryFullPath)
 
-            if (!dir.exists())
-                dir.mkdir()
+            if (!SystemFileSystem.exists(dir))
+                SystemFileSystem.createDirectories(dir)
 
-            val file = File(directoryFullPath, fileName)
+            val file = Path(directoryFullPath, fileName)
 
             var serializedBytes: ByteArray? = null
 
@@ -171,7 +180,9 @@ class BatchPartInfo {
                 serializedBytes = jsonString.toByteArray()
             }
 
-            file.writeBytes(serializedBytes)
+            SystemFileSystem.sink(file).use {
+                it.buffered().write(ByteString(serializedBytes))
+            }
         }
 
         /**
