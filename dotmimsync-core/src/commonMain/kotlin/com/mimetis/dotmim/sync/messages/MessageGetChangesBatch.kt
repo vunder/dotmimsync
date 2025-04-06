@@ -2,6 +2,7 @@ package com.mimetis.dotmim.sync.messages
 
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
+import kotlinx.io.files.Path
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 

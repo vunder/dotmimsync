@@ -1,23 +1,94 @@
 package com.mimetis.dotmim.sync.orchestrators
 
-import android.database.Cursor
-import com.mimetis.dotmim.sync.*
-import com.mimetis.dotmim.sync.args.*
+import androidx.sqlite.SQLiteStatement
+import com.mimetis.dotmim.sync.CoreProvider
+import com.mimetis.dotmim.sync.DataRowState
+import com.mimetis.dotmim.sync.DbSyncAdapter
+import com.mimetis.dotmim.sync.MissingColumnException
+import com.mimetis.dotmim.sync.MissingPrimaryKeyColumnException
+import com.mimetis.dotmim.sync.MissingPrimaryKeyException
+import com.mimetis.dotmim.sync.MissingTableException
+import com.mimetis.dotmim.sync.MissingTablesException
+import com.mimetis.dotmim.sync.MissingsColumnException
+import com.mimetis.dotmim.sync.OutOfDateException
+import com.mimetis.dotmim.sync.Progress
+import com.mimetis.dotmim.sync.RollbackException
+import com.mimetis.dotmim.sync.RowOverSizedException
+import com.mimetis.dotmim.sync.SyncConflict
+import com.mimetis.dotmim.sync.SyncContext
+import com.mimetis.dotmim.sync.SyncOptions
+import com.mimetis.dotmim.sync.SyncVersion
+import com.mimetis.dotmim.sync.Tuple
+import com.mimetis.dotmim.sync.UnknownException
+import com.mimetis.dotmim.sync.UnsupportedColumnTypeException
+import com.mimetis.dotmim.sync.UnsupportedPrimaryKeyColumnNameException
+import com.mimetis.dotmim.sync.args.ApplyChangesFailedArgs
+import com.mimetis.dotmim.sync.args.DatabaseChangesAppliedArgs
+import com.mimetis.dotmim.sync.args.DatabaseChangesSelectedArgs
+import com.mimetis.dotmim.sync.args.DatabaseChangesSelectingArgs
+import com.mimetis.dotmim.sync.args.DeprovisionedArgs
+import com.mimetis.dotmim.sync.args.DeprovisioningArgs
+import com.mimetis.dotmim.sync.args.OutdatedAction
+import com.mimetis.dotmim.sync.args.OutdatedArgs
+import com.mimetis.dotmim.sync.args.ProgressArgs
+import com.mimetis.dotmim.sync.args.ProvisionedArgs
+import com.mimetis.dotmim.sync.args.ProvisioningArgs
+import com.mimetis.dotmim.sync.args.SchemaLoadedArgs
+import com.mimetis.dotmim.sync.args.SchemaLoadingArgs
+import com.mimetis.dotmim.sync.args.ScopeSavedArgs
+import com.mimetis.dotmim.sync.args.ScopeSavingArgs
+import com.mimetis.dotmim.sync.args.ScopeTableCreatedArgs
+import com.mimetis.dotmim.sync.args.ScopeTableCreatingArgs
+import com.mimetis.dotmim.sync.args.TableChangesAppliedArgs
+import com.mimetis.dotmim.sync.args.TableChangesApplyingArgs
+import com.mimetis.dotmim.sync.args.TableChangesBatchAppliedArgs
+import com.mimetis.dotmim.sync.args.TableChangesBatchApplyingArgs
+import com.mimetis.dotmim.sync.args.TableChangesSelectedArgs
+import com.mimetis.dotmim.sync.args.TableChangesSelectingArgs
 import com.mimetis.dotmim.sync.batch.BatchInfo
-import com.mimetis.dotmim.sync.builders.*
-import com.mimetis.dotmim.sync.enumerations.*
+import com.mimetis.dotmim.sync.builders.DbScopeBuilder
+import com.mimetis.dotmim.sync.builders.DbScopeType
+import com.mimetis.dotmim.sync.builders.DbStoredProcedureType
+import com.mimetis.dotmim.sync.builders.DbTableBuilder
+import com.mimetis.dotmim.sync.builders.DbTriggerType
+import com.mimetis.dotmim.sync.enumerations.ApplyAction
+import com.mimetis.dotmim.sync.enumerations.ConflictResolution
+import com.mimetis.dotmim.sync.enumerations.ConflictResolutionPolicy
+import com.mimetis.dotmim.sync.enumerations.ConflictType
+import com.mimetis.dotmim.sync.enumerations.SyncDirection
+import com.mimetis.dotmim.sync.enumerations.SyncProvision
+import com.mimetis.dotmim.sync.enumerations.SyncStage
+import com.mimetis.dotmim.sync.enumerations.SyncType
+import com.mimetis.dotmim.sync.enumerations.SyncWay
 import com.mimetis.dotmim.sync.interceptors.Interceptors
 import com.mimetis.dotmim.sync.manager.DbRelationDefinition
-import com.mimetis.dotmim.sync.messages.*
+import com.mimetis.dotmim.sync.messages.DatabaseChangesApplied
+import com.mimetis.dotmim.sync.messages.DatabaseChangesSelected
+import com.mimetis.dotmim.sync.messages.DatabaseMetadatasCleaned
+import com.mimetis.dotmim.sync.messages.MessageApplyChanges
+import com.mimetis.dotmim.sync.messages.MessageGetChangesBatch
+import com.mimetis.dotmim.sync.messages.TableChangesApplied
+import com.mimetis.dotmim.sync.messages.TableChangesSelected
+import com.mimetis.dotmim.sync.messages.TableMetadatasCleaned
 import com.mimetis.dotmim.sync.parameter.SyncParameters
 import com.mimetis.dotmim.sync.scopes.ScopeInfo
 import com.mimetis.dotmim.sync.scopes.ServerScopeInfo
-import com.mimetis.dotmim.sync.set.*
+import com.mimetis.dotmim.sync.set.ContainerTable
+import com.mimetis.dotmim.sync.set.CustomList
+import com.mimetis.dotmim.sync.set.SyncColumn
+import com.mimetis.dotmim.sync.set.SyncColumnIdentifier
+import com.mimetis.dotmim.sync.set.SyncFilter
+import com.mimetis.dotmim.sync.set.SyncRelation
+import com.mimetis.dotmim.sync.set.SyncRow
+import com.mimetis.dotmim.sync.set.SyncSet
+import com.mimetis.dotmim.sync.set.SyncTable
+import com.mimetis.dotmim.sync.set.isNullOrEmpty
 import com.mimetis.dotmim.sync.setup.SetupTable
 import com.mimetis.dotmim.sync.setup.SyncSetup
 import com.mimetis.dotmim.sync.sqlite.CursorHelper.getValue
-import java.io.File
-import java.util.*
+import com.mimetis.dotmim.sync.utcNow
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -104,7 +175,7 @@ abstract class BaseOrchestrator(
         overwrite: Boolean,
         schema: SyncSet,
         setup: SyncSetup,
-        provision: EnumSet<SyncProvision>,
+        provision: Set<SyncProvision>,
         scope: Any?,
         progress: Progress<ProgressArgs>?
     ): SyncSet {
@@ -456,7 +527,7 @@ abstract class BaseOrchestrator(
                     this.provider.getProviderTypeName()
                 )
 
-            val columnNameLower = column.columnName.lowercase(Locale.getDefault())
+            val columnNameLower = column.columnName.lowercase()
             if (columnNameLower == "sync_scope_id"
                 || columnNameLower == "changeTable"
                 || columnNameLower == "sync_scope_name"
@@ -562,7 +633,7 @@ abstract class BaseOrchestrator(
             if (columnKey == null)
                 throw MissingPrimaryKeyColumnException(rowColumn.columnName, schemaTable.tableName)
 
-            val columnNameLower = columnKey.columnName.lowercase(Locale.getDefault())
+            val columnNameLower = columnKey.columnName.lowercase()
             if (columnNameLower == "update_scope_id" ||
                 columnNameLower == "timestamp" ||
                 columnNameLower == "timestamp_bigint" ||
@@ -752,7 +823,7 @@ abstract class BaseOrchestrator(
         setup: SyncSetup,
         isNew: Boolean,
         lastTimestamp: Long?
-    ): Cursor {
+    ): SQLiteStatement {
         val tableFilter: SyncFilter?
 
         val syncAdapter = this.getSyncAdapter(syncTable, setup)
@@ -781,13 +852,13 @@ abstract class BaseOrchestrator(
     /**
      * Create a new SyncRow from a dataReader.
      */
-    internal fun createSyncRowFromReader(cursor: Cursor, table: SyncTable): SyncRow {
+    internal fun createSyncRowFromReader(cursor: SQLiteStatement, table: SyncTable): SyncRow {
         // Create a new row, based on table structure
         val row = table.newRow()
 
         var isTombstone = false
 
-        for (i in 0 until cursor.columnCount) {
+        for (i in 0 until cursor.getColumnCount()) {
             val columnName = cursor.getColumnName(i)
 
             // if we have the tombstone value, do not add it to the table
@@ -953,7 +1024,7 @@ abstract class BaseOrchestrator(
         if (batchInfo.inMemory)
             return false
 
-        val batchInfoDirectoryFullPath = File(batchInfo.getDirectoryFullPath())
+        val batchInfoDirectoryFullPath = SystemFileSystem.resolve(Path( batchInfo.getDirectoryFullPath()))
 
         val (snapshotRootDirectory, snapshotNameDirectory) = this.getSnapshotDirectory()
 
@@ -961,12 +1032,11 @@ abstract class BaseOrchestrator(
         if (snapshotRootDirectory.isBlank())
             return true
 
-        val snapInfo = File(snapshotRootDirectory, snapshotNameDirectory).absolutePath
-        val snapshotDirectoryFullPath = File(snapInfo)
+        val snapInfo = Path(snapshotRootDirectory, snapshotNameDirectory)
+        val snapshotDirectoryFullPath = SystemFileSystem.resolve(snapInfo)
 
         // check if the batch dir IS NOT the snapshot directory
-        val canCleanFolder =
-            batchInfoDirectoryFullPath.absolutePath != snapshotDirectoryFullPath.absolutePath
+        val canCleanFolder = batchInfoDirectoryFullPath.toString() != snapshotDirectoryFullPath.toString()
 
         return canCleanFolder
     }
@@ -996,8 +1066,7 @@ abstract class BaseOrchestrator(
         // cleansing scope name
         val directoryScopeName = context.scopeName.filter { it.isLetterOrDigit() }
 
-        val directoryFullPath =
-            File(this.options.snapshotsDirectory, directoryScopeName).absolutePath
+        val directoryFullPath = SystemFileSystem.resolve(Path(this.options.snapshotsDirectory, directoryScopeName))
 
         val sb = StringBuilder()
         var underscore = ""
@@ -1015,7 +1084,7 @@ abstract class BaseOrchestrator(
         var directoryName = sb.toString()
         directoryName = if (directoryName.isBlank()) "ALL" else directoryName
 
-        return Pair(directoryFullPath, directoryName)
+        return Pair(directoryFullPath.toString(), directoryName)
     }
 
     /**
@@ -1578,14 +1647,14 @@ abstract class BaseOrchestrator(
             val changesSet = schema.schema!!.clone(false)
             val selectTable = DbSyncAdapter.createChangesTable(schema, changesSet)
 
-            if (!dataReader.moveToNext()) {
+            if (!dataReader.step()) {
                 dataReader.close()
                 return null
             }
 
             // Create a new empty row
             val syncRow = selectTable.newRow()
-            for (i in 0 until dataReader.columnCount) {
+            for (i in 0 until dataReader.getColumnCount()) {
                 val columnName = dataReader.getColumnName(i)
 
                 // if we have the tombstone value, do not add it to the table
@@ -1748,8 +1817,9 @@ abstract class BaseOrchestrator(
         intercept(DatabaseChangesSelectingArgs(context, message))
 
         // create local directory
-        if (message.batchSize > 0 && message.batchDirectory.isNotBlank() && !File(message.batchDirectory).exists()) {
-            File(message.batchDirectory).mkdir()
+        val batchPath = Path(message.batchDirectory)
+        if (message.batchSize > 0 && message.batchDirectory.isNotBlank() && !SystemFileSystem.exists(batchPath)) {
+            SystemFileSystem.createDirectories(batchPath)
         }
 
         changesSelected = DatabaseChangesSelected()
@@ -1814,7 +1884,7 @@ abstract class BaseOrchestrator(
                 // memory size total
                 var rowsMemorySize = 0.0
 
-                while (cursor.moveToNext()) {
+                while (cursor.step()) {
 //                Log.d(TAG, "Reading ${changesSetTable.tableName} row: ${cursor.position} of ${cursor.count}")
                     // Create a row from dataReader
                     val row = createSyncRowFromReader(cursor, changesSetTable)
@@ -1958,7 +2028,7 @@ abstract class BaseOrchestrator(
         ctx: SyncContext,
         schema: SyncSet,
         setup: SyncSetup,
-        provision: EnumSet<SyncProvision>,
+        provision: MutableSet<SyncProvision>,
         scope: Any?,
         progress: Progress<ProgressArgs>? = null
     ): Boolean {
@@ -1991,9 +2061,7 @@ abstract class BaseOrchestrator(
             val tableBuilder = this.getTableBuilder(schemaTable, setup)
 
             if (provision.contains(SyncProvision.StoredProcedures)) {
-                val allStoredProcedures = DbStoredProcedureType.values()
-
-                allStoredProcedures.reverse()
+                val allStoredProcedures = DbStoredProcedureType.entries.reversed()
 
                 for (storedProcedureType in allStoredProcedures) {
                     // if we are iterating on bulk, but provider do not support it, just loop through and continue
@@ -2227,7 +2295,7 @@ abstract class BaseOrchestrator(
     }
 
     companion object {
-        private val TAG = BaseOrchestrator::class.java.simpleName
+        private val TAG = BaseOrchestrator::class.simpleName
     }
 }
 
@@ -2237,7 +2305,7 @@ abstract class BaseOrchestrator(
  * @param throwOnCycle if true throw exception if Cyclic dependency found
  * @param defaultCapacity default capacity of sorterd buffer
  */
-private fun List<SyncTable>.sortByDependencies(
+private fun CustomList<SyncTable>.sortByDependencies(
     dependencies: (SyncTable) -> List<SyncTable>,
     throwOnCycle: Boolean = false,
     defaultCapacity: Int = 10

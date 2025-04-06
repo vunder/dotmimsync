@@ -9,6 +9,7 @@ import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.ContainerSet
 import com.mimetis.dotmim.sync.set.SyncSet
 import java.io.File
+import kotlin.reflect.KClass
 
 /**
  * Info about a BatchPart
@@ -47,7 +48,7 @@ class BatchPartInfo {
      * Gets or Sets the serialized type
      */
     @Transient
-    var serializedType: Class<*>? = null
+    var serializedType: KClass<*>? = null
 
     /**
      * Loads the batch file and import the rows in a SyncSet instance
@@ -101,7 +102,7 @@ class BatchPartInfo {
 
         // backward compatibility
         if (serializedType == null)
-            serializedType = ContainerSet::class.java
+            serializedType = ContainerSet::class
 
         var set: ContainerSet? = null
 
@@ -121,7 +122,7 @@ class BatchPartInfo {
                 ignoreUnknownKeys = true
                 isLenient = true
             }
-            set = if (serializedType == ContainerSet::class.java) {
+            set = if (serializedType == ContainerSet::class) {
                 json.decodeFromString(file.readText())
             } else {
                 val jsonString: ContainerSetBoilerPlate = json.decodeFromString(file.readText())

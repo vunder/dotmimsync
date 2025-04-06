@@ -18,5 +18,8 @@ abstract class CustomList<T>() : Iterable<T> {
 
     fun isEmpty(): Boolean = internalList.isEmpty()
     fun isNotEmpty(): Boolean = internalList.isNotEmpty()
+
     fun addAll(items: Iterable<T>) = internalList.addAll(items)
 }
+
+fun<T> CustomList<T>?.isNullOrEmpty(): Boolean = this == null || this.isEmpty()
