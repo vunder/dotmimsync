@@ -44,19 +44,22 @@ kotlin {
             implementation(libs.androidx.sqlite.bundled)
 
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
+//            implementation(libs.ktor.client.content.negotiation)
+//            implementation(libs.ktor.serialization.kotlinx.json)
 
             implementation(libs.kotlin.bignum)
             implementation(libs.kotlin.bignum.serialization)
             implementation(kotlincrypto.hash.sha2)
         }
-        androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
-        }
-        iosMain.dependencies {
+//        androidMain.dependencies {
+//            implementation(libs.ktor.client.okhttp)
+//        }
+//        iosMain.dependencies {
 //            implementation(libs.ktor.client.darwin)
-        }
+//        }
+//        jvmMain.dependencies {
+//            implementation(libs.ktor.client.okhttp)
+//        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
@@ -93,7 +96,7 @@ publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = "1.1.0-kmp.alpha0"
+        version = "1.1.0-kmp.alpha1"
         if (versionSuffix.isNotBlank()) {
             version += "-$versionSuffix"
         }
