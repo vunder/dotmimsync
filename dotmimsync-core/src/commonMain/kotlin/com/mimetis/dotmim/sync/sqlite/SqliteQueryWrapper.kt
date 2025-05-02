@@ -52,6 +52,7 @@ class SqliteQueryWrapper(
                 order = second
             }
         } else {
+            statement?.reset()
             statement?.clearBindings()
         }
 
