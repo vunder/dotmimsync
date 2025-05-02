@@ -39,7 +39,7 @@ class SyncRows() : CustomList<SyncRow>() {
 
             if (!checkType) {
 //                System.arraycopy(row, 1, itemArray, 0, length)
-                row.copyInto(itemArray, 0, 1, length - 1)
+                row.copyInto(itemArray, 0, 1)
             } else {
                 // Get only writable columns
                 val columns = table!!.getMutableColumnsWithPrimaryKeys()
