@@ -12,3 +12,4 @@ xcuserdata
 /publish-and-release.sh
 /snapshot.sh
 /publish-only.sh
+/local-build.sh
