@@ -11,7 +11,6 @@ import com.mimetis.dotmim.sync.set.SyncColumn
 import com.mimetis.dotmim.sync.set.SyncTable
 import com.mimetis.dotmim.sync.setup.DbType
 import com.mimetis.dotmim.sync.setup.SyncSetup
-import com.mimetis.dotmimsync.currentPlatform
 
 class SqliteTableBuilder(
     tableDescription: SyncTable,
@@ -413,9 +412,7 @@ class SqliteTableBuilder(
 //        val commandColumn = "SELECT * FROM pragma_table_info('$unquotedTableName');"
         val commandColumn = "pragma table_info('$unquotedTableName');"
         val syncTable = SyncTable(unquotedTableName, "")
-        database.prepare(commandColumn).use { cursor ->
-            cursor.step()
-            syncTable.load(cursor) }
+        database.prepare(commandColumn).use { cursor -> syncTable.load(cursor) }
         return syncTable
     }
 
@@ -430,7 +427,7 @@ class SqliteTableBuilder(
     ): String {
         // We MUST check if we are from the same provider (if it's mysql or oracle, we fallback on dbtype
         if (originalDbType.isNotBlank() && fromProviderType == ownerProviderType) {
-           val ownedDbType = validateOwnerDbType(originalDbType, isUnsigned, isUnicode, maxLength)
+            val ownedDbType = validateOwnerDbType(originalDbType, isUnsigned, isUnicode, maxLength)
             return when (ownedDbType) {
                 SqliteType.Integer -> "integer"
                 SqliteType.Real -> "numeric"
@@ -476,10 +473,12 @@ class SqliteTableBuilder(
             DbType.Time,
             DbType.DateTimeOffset ->
                 "text"
+
             DbType.Guid,
             DbType.Binary,
             DbType.Object ->
                 "blob"
+
             DbType.Boolean,
             DbType.Byte,
             DbType.Int16,
@@ -490,16 +489,19 @@ class SqliteTableBuilder(
             DbType.UInt64,
             DbType.SByte ->
                 "integer"
+
             DbType.Date,
             DbType.DateTime,
             DbType.DateTime2 ->
                 "datetime"
+
             DbType.Decimal,
             DbType.Double,
             DbType.Single,
             DbType.Currency,
             DbType.VarNumeric ->
                 "real"
+
             else ->
                 throw Exception("this DbType ${dbType} is not supported")
         }
@@ -522,22 +524,29 @@ class SqliteTableBuilder(
         when (typeName.lowercase()) {
             "bit" ->
                 return DbType.Boolean
+
             "integer",
             "bigint" ->
                 return DbType.Int64
+
             "numeric",
             "real",
             "float" ->
                 return DbType.Double
+
             "decimal" ->
                 return DbType.Decimal
+
             "blob",
             "image" ->
                 return DbType.Binary
+
             "datetime" ->
                 return DbType.DateTime
+
             "time" ->
                 return DbType.Time
+
             "text",
             "varchar" ->
                 return DbType.String
@@ -561,13 +570,16 @@ class SqliteTableBuilder(
             "integer",
             "bigint" ->
                 return SqliteType.Integer
+
             "numeric",
             "decimal",
             "real" ->
                 return SqliteType.Real
+
             "blob",
             "image" ->
                 return SqliteType.Blob
+
             "datetime",
             "text" ->
                 return SqliteType.Text
