@@ -96,7 +96,7 @@ publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = "1.1.0-kmp.alpha2"
+        version = "1.1.0-kmp.alpha3"
         if (versionSuffix.isNotBlank()) {
             version += "-$versionSuffix"
         }
