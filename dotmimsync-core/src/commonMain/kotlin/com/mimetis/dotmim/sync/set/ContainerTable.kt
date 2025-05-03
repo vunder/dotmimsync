@@ -4,12 +4,14 @@ import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.mimetis.dotmim.sync.PrimitiveSerializer
 import com.mimetis.dotmim.sync.serialization.DmUtils
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.reflect.KClass
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 class ContainerTable(
         @SerialName("n")

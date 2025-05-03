@@ -24,13 +24,13 @@ class SyncContext(
     var clientScopeId: Uuid? = null,
 
     @SerialName("typ")
-    var syncType: SyncType = SyncType.values()[0],
+    var syncType: SyncType = SyncType.entries[0],
 
     @SerialName("way")
-    var syncWay: SyncWay = SyncWay.values()[0],
+    var syncWay: SyncWay = SyncWay.entries[0],
 
     @SerialName("stage")
-    var syncStage: SyncStage = SyncStage.values()[0],
+    var syncStage: SyncStage = SyncStage.entries[0],
 
     @SerialName("ps")
     var parameters: SyncParameters? = null,

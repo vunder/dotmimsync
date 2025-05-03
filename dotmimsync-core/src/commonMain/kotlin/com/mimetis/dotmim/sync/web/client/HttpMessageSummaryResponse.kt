@@ -45,5 +45,5 @@ class HttpMessageSummaryResponse(
         var clientChangesApplied: DatabaseChangesApplied,
 
         @SerialName("crp")
-        var conflictResolutionPolicy: ConflictResolutionPolicy = ConflictResolutionPolicy.values()[0]
+        var conflictResolutionPolicy: ConflictResolutionPolicy = ConflictResolutionPolicy.entries[0]
 )

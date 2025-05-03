@@ -182,7 +182,7 @@ class SyncColumn(
             }
 
     fun getDbType(): DbType =
-            DbType.values()[this.dbType]
+            DbType.entries[this.dbType]
 
     /**
      * Get auto inc values, coercing Step

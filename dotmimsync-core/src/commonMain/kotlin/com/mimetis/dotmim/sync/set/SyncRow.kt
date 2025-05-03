@@ -2,9 +2,11 @@ package com.mimetis.dotmim.sync.set
 
 import com.mimetis.dotmim.sync.DataRowState
 import com.mimetis.dotmim.sync.PrimitiveSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 class SyncRow(@Transient val length: Int = 0) {
     private var buffer: Array<@Serializable(with = PrimitiveSerializer::class) Any?> =
@@ -72,7 +74,7 @@ class SyncRow(@Transient val length: Int = 0) {
         this.rowState = if (drs is DataRowState) {
             drs
         } else {
-            DataRowState.values().first { it.value == drs }
+            DataRowState.entries.first { it.value == drs }
         }
     }
 

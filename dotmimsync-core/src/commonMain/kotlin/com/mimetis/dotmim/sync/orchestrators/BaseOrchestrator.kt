@@ -765,7 +765,7 @@ abstract class BaseOrchestrator(
     ): Boolean {
         var hasCreatedAtLeastOneTrigger = false
 
-        val listTriggerType = DbTriggerType.values()
+        val listTriggerType = DbTriggerType.entries
 
         for (triggerType in listTriggerType) {
             val exists = tableBuilder.existsTrigger(triggerType)
@@ -2093,7 +2093,7 @@ abstract class BaseOrchestrator(
             }
 
             if (provision.contains(SyncProvision.Triggers)) {
-                for (triggerType in DbTriggerType.values()) {
+                for (triggerType in DbTriggerType.entries) {
                     val exists = internalExistsTrigger(ctx, tableBuilder, triggerType, progress)
 
                     // Drop trigger if already exists

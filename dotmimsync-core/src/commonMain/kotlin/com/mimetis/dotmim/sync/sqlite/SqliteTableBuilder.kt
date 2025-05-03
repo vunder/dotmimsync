@@ -75,7 +75,6 @@ class SqliteTableBuilder(
             "pragma table_info('${unquotedTableName}');"
         ).use { cursor ->
             val columns = cursor.getColumnNames()
-            cursor.step()
             keys.load(cursor) { c -> c.getInt(columns.indexOf("pk")) == 1 }
         }
 
@@ -435,7 +434,7 @@ class SqliteTableBuilder(
                 SqliteType.Blob -> "blob"
                 else -> throw Exception("this SqliteType ${ownedDbType} is not supported")
             }
-            return getStringFromOwnerDbType(ownedDbType)//DbType.values()[ownedDbType.ordinal])
+            return getStringFromOwnerDbType(ownedDbType)//DbType.entries[ownedDbType.ordinal])
         }
 
         // if it's not the same provider, fallback on DbType instead.

@@ -3,6 +3,7 @@ package com.mimetis.dotmim.sync.parameter
 import kotlinx.serialization.*
 import com.mimetis.dotmim.sync.PrimitiveSerializer
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 class SyncParameter(
         @SerialName("pn")

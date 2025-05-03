@@ -7,7 +7,7 @@ import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.plugin
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.readBytes
+import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.content.OutgoingContent
@@ -106,7 +106,7 @@ internal class DotmimServiceImpl(
 
             contentType(ContentType.Application.Json)
             setBody(args)
-        }.readBytes()
+        }.readRawBytes()
 
     suspend fun endDownloadChanges(
         authHeader: String,
@@ -145,12 +145,12 @@ internal class DotmimServiceImpl(
     init {
         val md = SHA256()
         client.plugin(HttpSend).intercept { request ->
-            request.headers.append("dotmim-sync-serialization-format", """{"f":"json", "s":0}""")
+            request.headers["dotmim-sync-serialization-format"] = """{"f":"json", "s":0}"""
             if (request.body is OutgoingContent.ByteArrayContent) {
                 val bytes = (request.body as OutgoingContent.ByteArrayContent).bytes()
                 val digest = md.digest(bytes)
                 val hash = digest.encodeBase64()
-                request.headers.append("dotmim-sync-hash", hash)
+                request.headers["dotmim-sync-hash"] =  hash
             }
             execute(request)
         }
