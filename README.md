@@ -13,21 +13,14 @@ To use library in your app add link to JitPack repo
     allprojects {
         repositories {
             ...
-            maven { url 'https://jitpack.io' }
+            mavenCentral()
         }
     }
 ```
 and add library dependency to your app build.gradle
 ```
     dependencies {
-            implementation 'com.github.vunder:dotmimsync:VERSION'
-    }
-```
-
-Also it is necessary to add this dependency to make library work correctly with http-session. You can use newer version in case it is available
-```
-    dependencies {
-            implementation 'com.squareup.okhttp3:okhttp-urlconnection:5.0.0-alpha.2'
+            implementation 'io.github.vunder:dotmimsync:VERSION'
     }
 ```
 
@@ -40,4 +33,4 @@ General use-cases you can find in original library documentation
 Here is a version match table. Left column represent current library, right column - Dotmim.Sync library
 |Library version|Dotmim.Sync version|
 |-|-|
-|1.0-1.0.2|0.9.1 or lower|
+|1.0-1.1.0|0.9.1 or lower|

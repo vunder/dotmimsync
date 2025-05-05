@@ -17,19 +17,21 @@ import com.mimetis.dotmim.sync.serialization.Converter
 import com.mimetis.dotmim.sync.set.ContainerSet
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.setup.SyncSetup
+import io.ktor.client.HttpClient
 import java.io.File
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
 class WebClientOrchestrator(
-    serviceAddress: String,
+    private val serviceAddress: String,
+    client: HttpClient,
     private val authHeader: String,
     private val converter: Converter? = null,
     private val maxDownladingDegreeOfParallelism: Int = 4
 ) : RemoteOrchestrator(FancyCoreProvider(), SyncOptions(), SyncSetup()) {
     private val TAG = this::class.java.simpleName
-    private val service = DotmimServiceImpl(serviceAddress)
+    private val service = DotmimServiceImpl(serviceAddress, client)
 
     /**
      * Send a request to remote web proxy for First step : Ensure scopes and schema
@@ -509,7 +511,7 @@ class WebClientOrchestrator(
             .forEach { table -> table.rows.forEach { row -> this.converter?.afterDeserialized(row) } }
 
     private fun getServiceHost() =
-        URL(service.serviceAddress).host
+        URL(serviceAddress).host
 
     private fun beforeSerializeRows(data: SyncSet) {
         data.tables

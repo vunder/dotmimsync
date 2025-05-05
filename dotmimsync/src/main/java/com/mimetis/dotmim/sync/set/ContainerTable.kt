@@ -1,12 +1,12 @@
 package com.mimetis.dotmim.sync.set
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import okio.utf8Size
 import com.mimetis.dotmim.sync.PrimitiveSerializer
 import com.mimetis.dotmim.sync.serialization.DmUtils
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
+import java.util.UUID
 
 @Serializable
 class ContainerTable(
@@ -43,7 +43,7 @@ class ContainerTable(
 //                else if (obj is DBNull)
 //                    byteCount += 5
                 else if (objType == String::class.java)
-                    byteCount += (obj as String).utf8Size()
+                    byteCount += (obj as String).length
                 else if (objType == ByteArray::class.java)
                     byteCount += (obj as ByteArray).size
                 else
@@ -51,7 +51,7 @@ class ContainerTable(
 
                 // Size for the type
                 if (objType != null)
-                    byteCount += DmUtils.getAssemblyQualifiedName(objType).utf8Size()
+                    byteCount += DmUtils.getAssemblyQualifiedName(objType).length
 
                 // State
                 byteCount += 4
