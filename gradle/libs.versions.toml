@@ -1,11 +1,11 @@
 [versions]
 agp = "8.5.0"
-kotlin = "2.1.20"
-serialization = "1.8.0"
+kotlin = "2.1.21"
+serialization = "1.8.1"
 kotlinx-datetime = "0.6.2"
 sqlite = "2.5.1"
-ktor = "3.1.1"
-vanniktech = "0.31.0"
+ktor = "3.1.3"
+vanniktech = "0.32.0"
 bignum = "0.3.10"
 
 [libraries]
@@ -18,21 +18,13 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 
-ktor-client-darwin = { module = "io.ktor:ktor-client-darvin", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 kotlin-bignum = { module = "com.ionspin.kotlin:bignum", version.ref = "bignum" }
 kotlin-bignum-serialization = { module = "com.ionspin.kotlin:bignum-serialization-kotlinx", version.ref = "bignum" }
 
 [plugins]
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
-kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-jetbrains-kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
