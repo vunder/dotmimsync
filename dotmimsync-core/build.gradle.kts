@@ -1,4 +1,3 @@
-import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -57,7 +56,7 @@ kotlin {
 
 android {
     namespace = "com.mimetis.dotmimsync"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         minSdk = 26
     }
@@ -143,6 +142,6 @@ publishing {
 }
 
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+    publishToMavenCentral(automaticRelease = false)
     signAllPublications()
 }
