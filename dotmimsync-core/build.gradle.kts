@@ -85,7 +85,7 @@ publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = "1.1.1-beta5"
+        version = "1.1.1-beta6"
         if (versionSuffix.isNotBlank()) {
             version += "-$versionSuffix"
         }
