@@ -31,7 +31,6 @@ import com.mimetis.dotmim.sync.setup.SyncSetup
 import com.mimetis.dotmim.sync.utcNow
 import io.ktor.client.HttpClient
 import io.ktor.http.Url
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.char
@@ -39,10 +38,12 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
 class WebClientOrchestrator(
     private val serviceAddress: String,
     client: HttpClient,
@@ -155,7 +156,7 @@ class WebClientOrchestrator(
                 char('_')
                 monthNumber()
                 char('_')
-                dayOfMonth()
+                day()
                 char('_')
                 second()
                 char('_')
@@ -447,7 +448,7 @@ class WebClientOrchestrator(
                 char('_')
                 monthNumber()
                 char('_')
-                dayOfMonth()
+                day()
                 char('_')
                 second()
                 char('_')

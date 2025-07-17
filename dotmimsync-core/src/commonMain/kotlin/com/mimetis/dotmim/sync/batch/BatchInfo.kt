@@ -4,7 +4,6 @@ import com.mimetis.dotmim.sync.DbSyncAdapter
 import com.mimetis.dotmim.sync.orchestrators.BaseOrchestrator
 import com.mimetis.dotmim.sync.set.SyncSet
 import com.mimetis.dotmim.sync.set.SyncTable
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.char
@@ -15,12 +14,15 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
  * Represents a Batch, containing a full or serialized change set
  */
+@OptIn(ExperimentalTime::class)
 @Serializable
 class BatchInfo() {
     /**
@@ -107,7 +109,7 @@ class BatchInfo() {
                     char('_')
                     monthNumber()
                     char('_')
-                    dayOfMonth()
+                    day()
                     char('_')
                     second()
                     char('_')
