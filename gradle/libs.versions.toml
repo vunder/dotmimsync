@@ -1,11 +1,11 @@
 [versions]
 agp = "8.11.0"
 kotlin = "2.2.0"
-serialization = "1.8.1"
-kotlinx-datetime = "0.6.2"
+serialization = "1.9.0"
+kotlinx-datetime = "0.7.1"
 sqlite = "2.5.2"
-ktor = "3.2.1"
-vanniktech = "0.33.0"
+ktor = "3.2.2"
+vanniktech = "0.34.0"
 bignum = "0.3.10"
 
 [libraries]

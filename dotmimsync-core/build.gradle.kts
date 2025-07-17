@@ -78,13 +78,14 @@ android {
     }
 }
 
+val libVersion = "1.1.1-beta7"
 val versionSuffix: String by project
 
 publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = "1.1.1-beta6"
+        version = libVersion
         if (versionSuffix.isNotBlank()) {
             version += "-$versionSuffix"
         }
@@ -142,6 +143,8 @@ publishing {
 }
 
 mavenPublishing {
+    coordinates("io.github.vunder.dotmimsync", "dotmimsync-core", libVersion)
+
     publishToMavenCentral(automaticRelease = false)
     signAllPublications()
 }
