@@ -5,6 +5,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.plugin
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.readRawBytes
@@ -89,6 +90,9 @@ internal class DotmimServiceImpl(
 
             contentType(ContentType.Application.Json)
             setBody(args)
+            timeout {
+                socketTimeoutMillis = 10 * 60 * 1000
+            }
         }.body()
 
     suspend fun moreChanges(
@@ -106,6 +110,9 @@ internal class DotmimServiceImpl(
 
             contentType(ContentType.Application.Json)
             setBody(args)
+            timeout {
+                socketTimeoutMillis = 10 * 60 * 1000
+            }
         }.readRawBytes()
 
     suspend fun endDownloadChanges(
@@ -123,6 +130,9 @@ internal class DotmimServiceImpl(
 
             contentType(ContentType.Application.Json)
             setBody(args)
+            timeout {
+                socketTimeoutMillis = 10 * 60 * 1000
+            }
         }.body()
 
     suspend fun getSummary(
@@ -140,6 +150,9 @@ internal class DotmimServiceImpl(
 
             contentType(ContentType.Application.Json)
             setBody(args)
+            timeout {
+                socketTimeoutMillis = 10 * 60 * 1000
+            }
         }.body()
 
     init {
