@@ -78,7 +78,7 @@ android {
     }
 }
 
-val libVersion = "1.1.1-beta9"
+val libVersion = "1.1.1-beta10"
 val versionSuffix: String by project
 
 publishing.publications
