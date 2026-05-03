@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     `maven-publish`
     alias(libs.plugins.vanniktech.maven.publish)
@@ -11,19 +11,19 @@ plugins {
 kotlin {
     jvm()
 
-    androidTarget {
-        publishLibraryVariants("release")
+    // Android target configuration is now inside kotlin block
+    android {
+        namespace = "com.mimetis.dotmimsync"
+        compileSdk = 36
+        minSdk = 26
+
         withSourcesJar(publish = true)
 
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_18)
-                }
-            }
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_18)
         }
     }
-    
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -54,31 +54,7 @@ kotlin {
     }
 }
 
-android {
-    namespace = "com.mimetis.dotmimsync"
-    compileSdk = 36
-    defaultConfig {
-        minSdk = 26
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_18
-        targetCompatibility = JavaVersion.VERSION_18
-    }
-
-    buildTypes {
-        debug {  }
-        release {  }
-    }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-            withJavadocJar()
-        }
-    }
-}
-
-val libVersion = "1.1.1-beta15"
+val libVersion = "1.1.1-beta16"
 val versionSuffix: String by project
 
 publishing.publications
