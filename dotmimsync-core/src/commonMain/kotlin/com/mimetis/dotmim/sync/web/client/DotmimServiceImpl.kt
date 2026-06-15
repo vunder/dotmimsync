@@ -165,7 +165,13 @@ internal class DotmimServiceImpl(
                 val hash = digest.encodeBase64()
                 request.headers["dotmim-sync-hash"] =  hash
             }
-            execute(request)
+            val call = execute(request)
+            val errorType = call.response.headers["dotmim-sync-error"]
+            if (errorType != null)
+                throw Exception("Server sync error: $errorType")
+            if (call.response.status.value >= 400)
+                throw Exception("Server sync error: HTTP ${call.response.status.value} ${call.response.status.description}")
+            call
         }
     }
 }
