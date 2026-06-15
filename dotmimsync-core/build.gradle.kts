@@ -54,7 +54,7 @@ kotlin {
     }
 }
 
-val libVersion = "1.1.1-beta18"
+val libVersion = "1.1.1-beta19"
 val versionSuffix: String by project
 
 publishing.publications

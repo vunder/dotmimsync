@@ -35,5 +35,5 @@ enum class HttpStep(override val value: Int) : EnumWithValue {
     GetChangesInProgress(8),
     GetSnapshot(9),
     GetSummary(10),
-    SendEndDownloadChanges(1)
+    SendEndDownloadChanges(11)
 }
