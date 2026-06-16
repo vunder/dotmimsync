@@ -13,8 +13,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
-import io.ktor.util.encodeBase64
 import org.kotlincrypto.hash.sha2.SHA256
+import kotlin.io.encoding.Base64
 import kotlin.uuid.ExperimentalUuidApi
 
 @OptIn(ExperimentalUuidApi::class)
@@ -162,7 +162,7 @@ internal class DotmimServiceImpl(
             if (request.body is OutgoingContent.ByteArrayContent) {
                 val bytes = (request.body as OutgoingContent.ByteArrayContent).bytes()
                 val digest = md.digest(bytes)
-                val hash = digest.encodeBase64()
+                val hash = Base64.encode(digest)
                 request.headers["dotmim-sync-hash"] =  hash
             }
             val call = execute(request)
