@@ -25,7 +25,6 @@ kotlin {
     }
 
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach {
@@ -54,7 +53,7 @@ kotlin {
     }
 }
 
-val libVersion = "1.1.1-beta19"
+val libVersion = "1.1.1-beta20"
 val versionSuffix: String by project
 
 publishing.publications
