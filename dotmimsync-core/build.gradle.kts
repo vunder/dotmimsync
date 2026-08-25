@@ -53,8 +53,8 @@ kotlin {
     }
 }
 
-val libVersion = "1.1.1-beta20"
-val versionSuffix: String by project
+val libVersion = "1.1.1-beta21"
+val versionSuffix = project.findProperty("versionSuffix") as String
 
 publishing.publications
     .withType<MavenPublication>()
