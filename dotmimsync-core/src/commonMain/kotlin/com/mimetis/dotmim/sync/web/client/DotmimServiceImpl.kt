@@ -8,6 +8,7 @@ import io.ktor.client.plugins.plugin
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -163,14 +164,19 @@ internal class DotmimServiceImpl(
                 val bytes = (request.body as OutgoingContent.ByteArrayContent).bytes()
                 val digest = md.digest(bytes)
                 val hash = Base64.encode(digest)
-                request.headers["dotmim-sync-hash"] =  hash
+                request.headers["dotmim-sync-hash"] = hash
             }
             val call = execute(request)
             val errorType = call.response.headers["dotmim-sync-error"]
-            if (errorType != null)
-                throw Exception("Server sync error: $errorType")
+            if (errorType != null) {
+//                val webException = Json.decodeFromString<WebSyncException>(call.response.bodyAsText())
+                throw Exception(
+                    "Server sync error: $errorType",
+                    Exception(call.response.bodyAsText())
+                )
+            }
             if (call.response.status.value >= 400)
-                throw Exception("Server sync error: HTTP ${call.response.status.value} ${call.response.status.description}")
+                throw Exception("Server sync error: HTTP ${call.response.status.value} ${call.response.status.description}. Body: ${call.response.bodyAsText()}")
             call
         }
     }

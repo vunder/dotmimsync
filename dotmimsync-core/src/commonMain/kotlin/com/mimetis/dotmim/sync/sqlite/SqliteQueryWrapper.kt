@@ -127,7 +127,7 @@ class SqliteQueryWrapper(
                 is Double -> sqlStatement.bindDouble(index++, value)
                 is Float -> sqlStatement.bindDouble(index++, value.toDouble())
                 is BigDecimal -> sqlStatement.bindDouble(index++, value.doubleValue(false))
-                is Uuid -> sqlStatement.bindText(index++, value.toString().uppercase())
+                is Uuid -> sqlStatement.bindBlob(index++, value.toByteArray())
                 is LocalDateTime -> sqlStatement.bindText(index++, dateFormat.format(value))
                 else -> sqlStatement.bindText(index++, value.toString())
             }

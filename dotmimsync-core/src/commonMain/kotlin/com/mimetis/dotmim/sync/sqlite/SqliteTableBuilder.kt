@@ -287,7 +287,7 @@ class SqliteTableBuilder(
         }
 
         // adding the tracking columns
-        stringBuilder.appendLine("[update_scope_id] [text] NULL COLLATE NOCASE, ")
+        stringBuilder.appendLine("[update_scope_id] [blob] NULL COLLATE NOCASE, ")
         stringBuilder.appendLine("[timestamp] [integer] NULL, ")
         stringBuilder.appendLine("[sync_row_is_tombstone] [integer] NOT NULL default(0), ")
         stringBuilder.appendLine("[last_change_datetime] [datetime] NULL, ")

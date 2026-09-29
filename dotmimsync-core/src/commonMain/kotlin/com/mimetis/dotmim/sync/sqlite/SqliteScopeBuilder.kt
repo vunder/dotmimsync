@@ -73,7 +73,7 @@ class SqliteScopeBuilder(
         database.prepare(
             "Select count(*) from ${scopeInfoTableName.unquoted()} where sync_scope_id=?"
         ).use { cursor ->
-            cursor.bindText(1, scopeId.toString())
+            cursor.bindBlob(1, scopeId.toByteArray())
             cursor.step() && cursor.getInt(0) > 0
         }
 
@@ -104,7 +104,7 @@ class SqliteScopeBuilder(
                 it.bindLong(8, scopeInfo.lastSyncTimestamp!!)
             else
                 it.bindNull(8)
-            it.bindText(9, scopeInfo.id.toString())
+            it.bindBlob(9, scopeInfo.id.toByteArray())
 
             it.step()
         }
@@ -138,7 +138,7 @@ class SqliteScopeBuilder(
             else
                 it.bindNull(7)
             it.bindLong(8, scopeInfo.lastSyncDuration)
-            it.bindText(9, scopeInfo.id.toString())
+            it.bindBlob(9, scopeInfo.id.toByteArray())
 
             it.step()
         }
@@ -160,7 +160,7 @@ class SqliteScopeBuilder(
     private fun readScope(cursor: SQLiteStatement, json: Json): ScopeInfo {
         val columns = cursor.getColumnNames()
         return ScopeInfo(
-            id = Uuid.parse(cursor.getText(columns.indexOf("sync_scope_id"))),
+            id = Uuid.fromByteArray(cursor.getBlob(columns.indexOf("sync_scope_id"))),
             name = cursor.getText(columns.indexOf("sync_scope_name")),
             schema = if (cursor.isNull(columns.indexOf("sync_scope_schema")))
                 null

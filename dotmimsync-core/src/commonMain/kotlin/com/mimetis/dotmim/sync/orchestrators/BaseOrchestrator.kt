@@ -872,7 +872,11 @@ abstract class BaseOrchestrator(
 
             val columnValue = cursor.getValue(i)
 
-            row[columnName] = columnValue
+            if (table.columns?.get(columnName)?.dataType == "16" && columnValue != null) {
+                row[columnName] = Uuid.fromByteArray(columnValue as ByteArray).toString().uppercase()
+            } else {
+                row[columnName] = columnValue
+            }
         }
 
         row.rowState = if (isTombstone) DataRowState.Deleted else DataRowState.Modified

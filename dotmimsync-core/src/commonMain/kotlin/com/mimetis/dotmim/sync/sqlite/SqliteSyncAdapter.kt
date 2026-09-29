@@ -165,11 +165,11 @@ class SqliteSyncAdapter(
         dateFormat
     ) {
         val stringBuilder = StringBuilder(1000)
-        val str1 = SqliteManagementUtils.joinTwoTablesOnClause(
-            this.tableDescription.primaryKeys,
-            "[c]",
-            "[base]"
-        )
+//        val str1 = SqliteManagementUtils.joinTwoTablesOnClause(
+//            this.tableDescription.primaryKeys,
+//            "[c]",
+//            "[base]"
+//        )
         val str7 = SqliteManagementUtils.joinTwoTablesOnClause(
             this.tableDescription.primaryKeys,
             "[p]",
@@ -280,19 +280,19 @@ class SqliteSyncAdapter(
         val stringBuilderParametersValues2 = StringBuilder()
         var empty = ""
 
-        val str1 = SqliteManagementUtils.joinOneTablesOnParametersValues(
-            this.tableDescription.primaryKeys,
-            "[side]"
-        )
-        val str2 = SqliteManagementUtils.joinOneTablesOnParametersValues(
-            this.tableDescription.primaryKeys,
-            "[base]"
-        )
-        val str7 = SqliteManagementUtils.joinTwoTablesOnClause(
-            this.tableDescription.primaryKeys,
-            "[p]",
-            "[side]"
-        )
+//        val str1 = SqliteManagementUtils.joinOneTablesOnParametersValues(
+//            this.tableDescription.primaryKeys,
+//            "[side]"
+//        )
+//        val str2 = SqliteManagementUtils.joinOneTablesOnParametersValues(
+//            this.tableDescription.primaryKeys,
+//            "[base]"
+//        )
+//        val str7 = SqliteManagementUtils.joinTwoTablesOnClause(
+//            this.tableDescription.primaryKeys,
+//            "[p]",
+//            "[side]"
+//        )
 
         // Generate Update command
         val stringBuilder = StringBuilder(1000)
@@ -697,7 +697,7 @@ class SqliteSyncAdapter(
 //                dateFormat.parse(value.toString().replace("T", " "))
                 value.toString().replace("T", " ")
             DbType.Guid ->
-                value.toString().uppercase()
+                Uuid.parse(value.toString()).toByteArray()
             else -> value
         }
     }
