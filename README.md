@@ -52,10 +52,15 @@ and add library dependency to your app build.gradle
 General use-cases you can find in original library documentation
 
 
+## Breaking changes
+Version 1.1.1 starts using BLOB type for `Uuid` values. This must be reflected in your code
+
+
 ## Dotmim.Sync version match table
 Here is a version match table. Left column represent current library, right column - Dotmim.Sync library
 
 | Library version |Dotmim.Sync version|
-|----------------|-|
-| 1.0-1.1.0      |0.9.1 or lower|
-| 1.1.0          |0.9.1 or lower|
+|-----------------|-|
+| 1.0-1.1.0       |0.9.1 or lower|
+| 1.1.0           |0.9.1 or lower|
+| 1.1.1           |0.9.1 or lower|
