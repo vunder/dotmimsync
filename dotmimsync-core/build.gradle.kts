@@ -53,11 +53,14 @@ kotlin {
     }
 }
 
+val libVersion = rootProject.version.toString()
+println("libVersion=$libVersion")
+
 publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = rootProject.version.toString()
+        version = libVersion
 
         pom {
             name = "dotmimsync"
@@ -112,7 +115,7 @@ publishing {
 }
 
 mavenPublishing {
-    coordinates("io.github.vunder.dotmimsync", "dotmimsync-core", rootProject.version.toString())
+    coordinates("io.github.vunder.dotmimsync", "dotmimsync-core", libVersion)
 
     publishToMavenCentral(automaticRelease = false)
     signAllPublications()
