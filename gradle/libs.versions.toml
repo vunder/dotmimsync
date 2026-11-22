@@ -7,6 +7,7 @@ sqlite = "2.7.1"
 ktor = "3.6.1"
 vanniktech = "0.37.0"
 bignum = "0.3.10"
+axion = "1.21.5"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -28,3 +29,4 @@ androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.r
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
+axion-release = { id = "pl.allegro.tech.build.axion-release", version.ref = "axion" }

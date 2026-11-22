@@ -53,17 +53,11 @@ kotlin {
     }
 }
 
-val libVersion = "1.1.1-beta26"
-val versionSuffix = project.findProperty("versionSuffix") as String
-
 publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = libVersion
-        if (versionSuffix.isNotBlank()) {
-            version += "-$versionSuffix"
-        }
+        version = project.version.toString()
 
         pom {
             name = "dotmimsync"
@@ -118,7 +112,7 @@ publishing {
 }
 
 mavenPublishing {
-    coordinates("io.github.vunder.dotmimsync", "dotmimsync-core", libVersion)
+    coordinates("io.github.vunder.dotmimsync", "dotmimsync-core", project.version.toString())
 
     publishToMavenCentral(automaticRelease = false)
     signAllPublications()
