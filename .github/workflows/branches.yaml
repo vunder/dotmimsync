@@ -20,16 +20,16 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      env:
-        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
-        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
-        ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNGIN_KEY }}
-        ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNIN_KEY_ID }}
-        ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNIN_KEY_PASSWORD }}
       run: chmod +x gradlew
 #     - name: Build with Gradle
 #       run: |
 #         ./gradlew wrapper --gradle-version 8.7.2 --distribution-type bin
 #         ./gradlew build
     - name: Build snapshot
+      env:
+        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
+        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
+        ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNGIN_KEY }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNIN_KEY_ID }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNIN_KEY_PASSWORD }}
       run: ./gradlew publishAllPublicationsToMavenCentralRepository --no-configuration-cache
