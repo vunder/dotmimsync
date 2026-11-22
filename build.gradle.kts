@@ -18,7 +18,7 @@ scmVersion {
     }
     // after release 1.0.10: 1.0.11-132-SNAPSHOT
     val commitsSinceTag = commitsSinceTagProvider // local copy: lambda must not capture the script (config cache)
-    snapshotCreator { _, _ -> "-$commitsSinceTag" }
+    snapshotCreator { _, _ -> "-beta$commitsSinceTag" }
 }
 
 allprojects {
