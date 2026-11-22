@@ -57,7 +57,7 @@ publishing.publications
     .withType<MavenPublication>()
     .configureEach {
         groupId = "io.github.vunder.dotmimsync"
-        version = project.version.toString()
+        version = rootProject.version.toString()
 
         pom {
             name = "dotmimsync"
@@ -112,7 +112,7 @@ publishing {
 }
 
 mavenPublishing {
-    coordinates("io.github.vunder.dotmimsync", "dotmimsync-core", project.version.toString())
+    coordinates("io.github.vunder.dotmimsync", "dotmimsync-core", rootProject.version.toString())
 
     publishToMavenCentral(automaticRelease = false)
     signAllPublications()
