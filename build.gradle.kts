@@ -6,7 +6,12 @@ plugins {
 }
 
 scmVersion {
-    tag { prefix.set("v") }   // tags look like v1.2.3
+    tag {
+        prefix.set("v")   // tags look like v1.2.3
+    }
+    nextVersion {
+        suffix = "beta"
+    }
 }
 
 allprojects {
